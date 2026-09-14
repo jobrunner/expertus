@@ -1,4 +1,4 @@
-.PHONY: test check serve docker a11y smoke e2e
+.PHONY: test check serve docker docker-test a11y smoke e2e
 
 test:
 	node --test $$(find test -name '*.test.js' | sort)
@@ -20,3 +20,6 @@ e2e:
 docker:
 	docker build -t legulus:dev .
 	docker run --rm -p 8080:8080 legulus:dev
+
+docker-test:
+	sh e2e/container.sh
