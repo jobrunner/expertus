@@ -8,8 +8,9 @@ import { createOrtus } from './adapters/ortus.js'
 import { createHostus } from './adapters/hostus.js'
 import { createHabitatus } from './adapters/habitatus.js'
 import { createActions } from './actions.js'
-import { announce, clear } from './dom.js'
+import { announce, clear, el } from './dom.js'
 import { renderPlotList } from './views/plot-list.js'
+import { renderPlotForm } from './views/plot-form.js'
 
 const mount = document.getElementById('ansicht')
 const live = document.getElementById('meldungen')
@@ -39,6 +40,23 @@ try {
       store.set({ route })
       clear(mount)
       if (route.name === 'list') cleanupView = renderPlotList({ mount, store, storage, actions, router })
+      if (route.name === 'plot') {
+        actions.openPlot(route.sampleId)
+        // „Arten" (Task 16) und „Auswertung" (Task 17) sind hier nur
+        // Platzhalter mit Überschrift, damit die Maske schon vier
+        // Abschnitte zeigt.
+        cleanupView = renderPlotForm({
+          mount, store, actions, router,
+          sections: [
+            () => el('section', { 'aria-labelledby': 'h-arten' }, el('h3', { id: 'h-arten', text: 'Arten' })),
+            () => el('section', { 'aria-labelledby': 'h-ausw' }, [
+              el('h3', { id: 'h-ausw', text: 'Auswertung' }),
+              el('button', { type: 'button', text: 'Auswerten', disabled: true }),
+              el('p', { class: 'muted', text: actions.blockingReason() ?? '' }),
+            ]),
+          ],
+        })
+      }
     },
   })
 
