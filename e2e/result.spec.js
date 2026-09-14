@@ -110,6 +110,21 @@ test('die 400-Meldung von habitatus steht wörtlich da', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('unknown country "Deutschland"')
 })
 
+test('die 400-Meldung bleibt am Plot und steht auch nach dem Wiederöffnen da', async ({ page }) => {
+  await stubServices(page, {
+    habitatus: { status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'unknown country "Deutschland"' }) },
+  })
+  await fertigerPlot(page)
+  await page.getByRole('button', { name: 'Auswerten' }).click()
+  await expect(page.getByRole('alert')).toContainText('unknown country "Deutschland"')
+  await page.reload()
+  // Nach dem Neuladen gibt es keine Alarmmeldung mehr — die am Plot
+  // gespeicherte Meldung benennt aber das beanstandete Feld und muss
+  // dastehen, sonst weiß niemand, was zu korrigieren ist.
+  await expect(page.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible()
+  await expect(page.getByText('unknown country "Deutschland"')).toBeVisible()
+})
+
 test('ein Dienstfehler bietet einen zweiten Versuch an', async ({ page }) => {
   await stubServices(page, { habitatus: { status: 503, body: 'weg' } })
   await fertigerPlot(page)

@@ -10,7 +10,7 @@ export function renderResultSection({ plot, actions, store }) {
   const ev = plot.evaluation
   const { evaluating } = store.get()
 
-  return el('section', { 'aria-labelledby': 'h-ausw' }, [
+  const node = el('section', { 'aria-labelledby': 'h-ausw' }, [
     el('h3', { id: 'h-ausw', text: 'Auswertung' }),
     el('button', {
       type: 'button',
@@ -22,16 +22,25 @@ export function renderResultSection({ plot, actions, store }) {
     ergebnis(ev, actions),
     ev?.status === 'ok' || ev?.status === 'stale' ? anhang(ev) : null,
   ])
+
+  // Der Abschnitt hält keine Ressourcen; die einheitliche Form hält die
+  // Maske frei davon, zwei Rückgabearten unterscheiden zu müssen.
+  return { node }
 }
 
 function ergebnis(ev, actions) {
   if (!ev) return null
   if (ev.status === 'error') {
-    // Die Meldung selbst steht schon oben in der Maske (role="alert",
-    // siehe plot-form.js) — hier nur der zweite Versuch. Eine zweite
-    // role="alert"-Zeile mit demselben Text wäre ein doppelter Alarm für
-    // dasselbe Ereignis.
-    return el('button', { type: 'button', text: 'Erneut versuchen', onClick: () => actions.evaluate() })
+    // Die Meldung bleibt am Plot und muss auch nach dem Wiederöffnen
+    // dastehen: sie benennt das beanstandete Feld, und ohne sie weiß die
+    // Nutzerin nicht, was sie korrigieren soll. Kein role="alert" — im
+    // Augenblick des Fehlers sagt die Meldung oben in der Maske (siehe
+    // plot-form.js) bereits an; ein zweiter Alarm für dasselbe Ereignis
+    // wäre eine Dopplung.
+    return el('p', {}, [
+      ev.message ? el('span', { class: 'warn', text: ev.message }) : null,
+      el('button', { type: 'button', text: 'Erneut versuchen', onClick: () => actions.evaluate() }),
+    ])
   }
   return el('p', {}, [
     el('strong', { text: resultLabel(ev.response.result) }),

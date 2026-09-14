@@ -13,7 +13,7 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
   const listbox = el('ul', { id: 'art-liste', role: 'listbox', class: 'listbox', hidden: true })
   const hinweis = el('p', { class: 'muted' })
 
-  mountCombobox({
+  const combobox = mountCombobox({
     input, listbox, hostus,
     onPick: (o) => actions.addSpecies({ name: o.name, conceptId: o.conceptId ?? null, entry: o.conceptId ? 'suggest' : 'manual' }),
     // Fällt hostus aus, blockiert das die Erfassung nicht: der Name bleibt
@@ -23,7 +23,7 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
 
   const doppelt = plot.species.map((s) => s.name).filter((n, i, a) => a.indexOf(n) !== i)
 
-  return el('section', { 'aria-labelledby': 'h-arten' }, [
+  const node = el('section', { 'aria-labelledby': 'h-arten' }, [
     el('h3', { id: 'h-arten', text: 'Arten' }),
     el('p', {}, [
       el('label', { for: 'skala', text: 'Deckungsskala' }),
@@ -39,6 +39,13 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
     ...[...new Set(doppelt)].map((n) => el('p', { class: 'warn', text: `${n} steht mehrfach in der Liste.` })),
     tabelle(plot, actions),
   ])
+
+  // Die Vorschlagssuche hält einen Entprellungs-Timer und einen
+  // AbortController. Ein Neuaufbau der Maske ersetzt diesen Abschnitt; ohne
+  // Rückgabe der Aufräumfunktion feuerte der alte Timer weiter und schickte
+  // eine Netzanfrage in einen längst ersetzten Baum. Die Maske sammelt sie
+  // ein und ruft sie beim nächsten Aufbau.
+  return { node, cleanup: () => combobox.destroy() }
 }
 
 function tabelle(plot, actions) {

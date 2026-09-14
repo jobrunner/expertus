@@ -121,7 +121,7 @@ test('ein eingefügtes Koordinatenpaar verteilt sich auf beide Felder', async ({
 })
 
 // Der Nachweis, dass die Artenliste während des Kopfdaten-Abrufs bedienbar
-// bleibt, hängt am Suchfeld für Arten (Task 16).
+// bleibt, hängt am Suchfeld für Arten.
 test('die Artenliste bleibt bedienbar, während die Kopfdaten laden', async ({ page }) => {
   let freigeben
   await page.route('https://ortus.test/api/v1/query*', async (route) => {
@@ -147,6 +147,61 @@ test('die Sample-ID ist umbenennbar, eine Kollision wird gemeldet', async ({ pag
   await page.getByLabel('Sample-ID').fill('Sylt-03')
   await page.getByLabel('Sample-ID').blur()
   await expect(page.getByText('Die Sample-ID Sylt-03 ist bereits vergeben.')).toBeVisible()
+})
+
+test('die Kollisionsmeldung bietet den bestehenden Plot zum Öffnen an', async ({ page }) => {
+  await neuerPlot(page)
+  await page.getByLabel('Sample-ID').fill('Sylt-03')
+  await page.getByLabel('Sample-ID').blur()
+  await expect(page).toHaveURL(/#\/plot\/Sylt-03$/)
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  await page.getByLabel('Sample-ID').fill('Sylt-03')
+  await page.getByLabel('Sample-ID').blur()
+  const angebot = page.getByRole('link', { name: 'Plot Sylt-03 öffnen' })
+  await expect(angebot).toBeVisible()
+  await angebot.click()
+  await expect(page).toHaveURL(/#\/plot\/Sylt-03$/)
+})
+
+test('ein geleertes Zahlen-Kopffeld gilt als fehlend, nicht als von Hand gesetzte Null', async ({ page }) => {
+  await neuerPlot(page)
+  await page.getByLabel('Breite').fill('52.52')
+  await page.getByLabel('Länge').fill('13.405')
+  await page.getByLabel('Länge').blur()
+  const zeile = page.getByRole('row', { name: /Ecoreg/ })
+  await expect(zeile).toContainText('aus ortus')
+  await page.getByLabel('Ecoreg').fill('')
+  await page.getByLabel('Ecoreg').blur()
+  await expect(zeile).toContainText('nicht ableitbar')
+  await expect(zeile).not.toContainText('von Hand gesetzt')
+  await expect(page.getByLabel('Ecoreg')).toHaveValue('')
+  await expect(page.getByRole('button', { name: 'Auswerten' })).toBeDisabled()
+})
+
+test('der Beleg verschwindet, sobald das Feld von Hand gesetzt ist', async ({ page }) => {
+  await neuerPlot(page)
+  await page.getByLabel('Breite').fill('52.52')
+  await page.getByLabel('Länge').fill('13.405')
+  await page.getByLabel('Länge').blur()
+  const zeile = page.getByRole('row', { name: /Ecoreg/ })
+  await expect(zeile).toContainText('Central European mixed forests')
+  await page.getByLabel('Ecoreg').fill('664')
+  await page.getByLabel('Ecoreg').blur()
+  await expect(zeile).toContainText('von Hand gesetzt')
+  // Der Beleg gehört zum Wert des Dienstes; neben einem selbst gesetzten
+  // Wert würde er vortäuschen, dieser käme von dort.
+  await expect(zeile).not.toContainText('Central European mixed forests')
+})
+
+test('ein Fehlschlag der Standortermittlung wird im Klartext gemeldet', async ({ page, context }) => {
+  // Ohne erteilte Berechtigung antwortet der Browser mit einem Fehler; er
+  // darf nicht verschluckt werden, sonst passiert sichtbar nichts.
+  await context.clearPermissions()
+  await neuerPlot(page)
+  await page.getByRole('button', { name: 'Aktuellen Standort verwenden' }).click()
+  await expect(page.getByText(/Standort nicht ermittelt/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Aktuellen Standort verwenden' })).toBeEnabled()
 })
 
 test('der Auswerten-Knopf nennt den Grund seiner Sperre', async ({ page }) => {

@@ -1,10 +1,12 @@
-// Die Maske: Standort, Kopfdaten und die Plätze für Arten und Auswertung
-// (Task 16/17 füllen diese als sections). Kopfdaten werden nebenläufig
-// geholt — pending blockiert nur den Kopfdaten-Abschnitt, nie die Maske.
+// Die Maske: Standort, Kopfdaten und die eingehängten Abschnitte für Arten
+// und Auswertung. Kopfdaten werden nebenläufig geholt — pending blockiert
+// nur den Kopfdaten-Abschnitt, nie die Maske.
 import { el, clear, preserveFocus } from '../dom.js'
 import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS } from '../header-map.js'
 import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
 import { originLabel } from '../format.js'
+import { CollisionError } from '../storage.js'
+import { hashFor } from '../router.js'
 
 // Welches Kopfdatum wie von Hand gesetzt wird. Text statt Auswahl nur dort,
 // wo es kein endliches Vokabular gibt.
@@ -19,6 +21,17 @@ const MANUAL_INPUT = {
 }
 
 export function renderPlotForm({ mount, store, actions, router, sections = [] }) {
+  // Die eingehängten Abschnitte bringen eigene Aufräumarbeit mit (die
+  // Vorschlagssuche hält einen Timer und einen AbortController). Ein
+  // Neuaufbau erzeugt sie neu; ohne diese Sammlung liefe der alte Timer
+  // weiter und feuerte eine Netzanfrage in einen längst ersetzten Baum.
+  let sectionCleanups = []
+
+  function cleanupSections() {
+    for (const fn of sectionCleanups) fn()
+    sectionCleanups = []
+  }
+
   function draw() {
     // Ein Neuaufbau ersetzt den gesamten Einhängepunkt und würde sonst den
     // Fokus verwerfen: nach jedem Zeichen in einem Zahlenfeld läge er im
@@ -27,6 +40,7 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     // nach dem Aufbau wieder her.
     preserveFocus(mount, () => {
       const { plot, headerPending, error } = store.get()
+      cleanupSections()
       if (!plot) {
         clear(mount)
         mount.append(el('p', { class: 'warn', text: 'Diesen Plot gibt es nicht.' }))
@@ -44,13 +58,38 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
           // wie eine Sample-ID-Kollision braucht eine sehbare Ausgabe direkt
           // in der Maske; role="alert" sorgt zugleich für die Ansage, ohne
           // dass der globale Bereich denselben Text noch einmal spiegelt.
-          error ? el('p', { class: 'warn', role: 'alert', text: error.message }) : null,
+          error ? fehlerzeile(error) : null,
           standort(plot),
           kopfdaten(plot, headerPending),
-          ...sections.map((render) => render(plot)),
+          ...abschnitte(plot),
         ].filter(Boolean),
       )
     })
+  }
+
+  // Ein Abschnitt liefert { node, cleanup }: die Maske hängt den Knoten ein
+  // und merkt sich die Aufräumfunktion bis zum nächsten Aufbau.
+  function abschnitte(plot) {
+    const gezeichnet = sections.map((render) => render(plot))
+    sectionCleanups = gezeichnet.map((a) => a.cleanup).filter(Boolean)
+    return gezeichnet.map((a) => a.node)
+  }
+
+  // Eine Namenskollision ist kein Sackgassen-Fehler: der bestehende Plot
+  // ist genau das, was die Nutzerin vermutlich sucht. Ohne dieses Angebot
+  // müsste sie den Weg über die Liste zurück suchen.
+  function fehlerzeile(error) {
+    const zeile = el('p', { class: 'warn', role: 'alert', text: error.message })
+    if (error instanceof CollisionError) {
+      zeile.append(
+        document.createTextNode(' '),
+        el('a', {
+          href: hashFor({ name: 'plot', sampleId: error.sampleId }),
+          text: `Plot ${error.sampleId} öffnen`,
+        }),
+      )
+    }
+    return zeile
   }
 
   function standort(plot) {
@@ -91,11 +130,28 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
       uebernehmen()
     }
 
+    // Verweigerte Berechtigung, abgelaufene Zeitgrenze, kein Empfang: ohne
+    // sichtbare Meldung passiert beim Druck auf den GPS-Knopf scheinbar
+    // nichts, und die Nutzerin drückt im Gelände wieder und wieder. Der
+    // Klartext des Browsers wird deshalb unverändert durchgereicht.
+    // Erst beim Auftreten in den Baum gehängt: ein dauerhaft vorhandener,
+    // leerer Alarmbereich wäre für Screenreader eine Meldung ohne Inhalt.
+    const gpsFehler = el('p', { class: 'warn', role: 'alert' })
+    function meldeGps(text) {
+      gpsFehler.textContent = text
+      if (text) gps.after(gpsFehler)
+      else gpsFehler.remove()
+    }
+
     const gps = el('button', {
       type: 'button', text: 'Aktuellen Standort verwenden',
       'aria-label': 'Aktuellen Standort verwenden',
       onClick() {
-        if (!navigator.geolocation) return
+        if (!navigator.geolocation) {
+          meldeGps('Standortermittlung steht in diesem Browser nicht zur Verfügung.')
+          return
+        }
+        meldeGps('')
         gps.disabled = true
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -108,7 +164,10 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
             })
             actions.fetchHeader()
           },
-          () => { gps.disabled = false },
+          (err) => {
+            gps.disabled = false
+            meldeGps(`Standort nicht ermittelt: ${err.message || 'unbekannter Fehler'}`)
+          },
           { enableHighAccuracy: true, timeout: 10000 },
         )
       },
@@ -154,8 +213,14 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
       // eine Aktion pro Tastendruck würde die Maske neu zeichnen und dabei
       // den Fokus verlieren — über Tastatur ließe sich dann nur ein
       // einziges Zeichen eintippen.
+      // Eine geleerte Eingabe ist kein Wert: Number('') wäre 0, und eine 0
+      // ginge als "von Hand gesetzt" still an habitatus. Leer heißt null
+      // und damit fehlend.
       : el('input', { id, type: 'number', step: 'any', value: value ?? '',
-          onBlur: (e) => actions.setHeaderField(field, Number(e.target.value)) })
+          onBlur: (e) => {
+            const roh = e.target.value.trim()
+            actions.setHeaderField(field, roh === '' ? null : Number(roh))
+          } })
 
     return el('tr', {}, [
       el('th', { scope: 'row' }, el('label', { for: control.id, text: field })),
@@ -167,7 +232,11 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   // Belege — die Quelle hinter einem Wert, etwa der Name der Ökoregion oder
   // die Meeresregion — sind Nebentext, kein eigenes Kopfdatum: sie fließen
   // nirgends in die Auswertung ein.
+  // Der Beleg gehört zum Wert des Dienstes. Steht daneben ein von Hand
+  // gesetzter Wert, belegt er nichts mehr und würde nur vortäuschen, der
+  // eigene Wert käme von dort.
   function beleg(plot, field) {
+    if (plot.headerOrigin?.[field] === 'manual') return null
     const e = plot.headerEvidence ?? {}
     const text = { Ecoreg: e.ecoName, Coast_EEA: e.seaRegion, Dunes_Bohn: e.bohnUnit, 'Altitude (m)': e.elevationSource }[field]
     return text ? el('span', { class: 'muted', text: ` ${text}` }) : null
@@ -182,5 +251,8 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   const unsubscribe = store.subscribe(draw)
   draw()
 
-  return () => unsubscribe()
+  return () => {
+    unsubscribe()
+    cleanupSections()
+  }
 }
