@@ -104,6 +104,34 @@ test('ein von Hand gesetztes Feld wechselt die Herkunft auf manual', async () =>
   assert.equal(store.get().plot.headerOrigin.Coast_EEA, 'manual')
 })
 
+test('ein während des Abrufs von Hand gesetztes Feld überlebt die eintreffende Antwort', async () => {
+  let freigeben
+  const ortus = { lookup: () => new Promise((res) => (freigeben = () => res({ header: HEADER, origin: ORIGIN, evidence: {} }))) }
+  const { actions, store } = setup({ ortus })
+  actions.newPlot()
+  actions.setCoordinate({ lat: 1, lon: 1, source: 'manual' })
+  const laeuft = actions.fetchHeader()
+  actions.setHeaderField('Coast_EEA', 'BAL_COAST')
+  freigeben()
+  await laeuft
+  assert.equal(store.get().plot.header.Coast_EEA, 'BAL_COAST')
+  assert.equal(store.get().plot.headerOrigin.Coast_EEA, 'manual')
+})
+
+test('während des Abrufs von Hand unberührte Felder übernehmen die Antwort', async () => {
+  let freigeben
+  const ortus = { lookup: () => new Promise((res) => (freigeben = () => res({ header: HEADER, origin: ORIGIN, evidence: {} }))) }
+  const { actions, store } = setup({ ortus })
+  actions.newPlot()
+  actions.setCoordinate({ lat: 1, lon: 1, source: 'manual' })
+  const laeuft = actions.fetchHeader()
+  actions.setHeaderField('Coast_EEA', 'BAL_COAST')
+  freigeben()
+  await laeuft
+  assert.equal(store.get().plot.header.Country, HEADER.Country)
+  assert.equal(store.get().plot.headerOrigin.Country, 'ortus')
+})
+
 test('blockingReason benennt das fehlende Feld', () => {
   const { actions } = setup()
   actions.newPlot()

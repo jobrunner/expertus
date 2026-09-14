@@ -71,7 +71,21 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
       store.set({ headerPending: true, error: null })
       try {
         const { header, origin, evidence } = await ortus.lookup({ ...current.coordinate, signal })
-        update((p) => ({ ...p, header, headerOrigin: origin, headerEvidence: evidence }))
+        // Den Plot-Stand erst NACH dem Abruf lesen: zwischen Start und
+        // Eintreffen der Antwort kann der Nutzer Felder von Hand gesetzt
+        // haben. Ein von Hand korrigierter Wert bleibt Vorrang vor der
+        // später eintreffenden ortus-Antwort — sonst würde eine bewusste
+        // Korrektur des Nutzers kommentarlos wieder überschrieben.
+        update((p) => {
+          const mergedHeader = { ...p.header }
+          const mergedOrigin = { ...p.headerOrigin }
+          for (const field of Object.keys(header)) {
+            if (p.headerOrigin?.[field] === 'manual') continue
+            mergedHeader[field] = header[field]
+            mergedOrigin[field] = origin[field]
+          }
+          return { ...p, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence }
+        })
         store.set({ headerPending: false })
       } catch (err) {
         // Ein Abbruch ist kein Fehler, sondern der Normalfall beim
@@ -126,6 +140,10 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
       }))
     },
 
+    // Umbenennen ändert die Auswertungsgrundlage nicht: das Ergebnis passt
+    // weiterhin zur selben Artenliste. storage.rename kapselt Speichern und
+    // Index bereits; markDirty wäre hier sachlich falsch und würde eine
+    // gültige Auswertung durch bloßes Umbenennen entwerten.
     rename(newId) {
       try {
         const moved = storage.rename(plot().sampleId, newId)
