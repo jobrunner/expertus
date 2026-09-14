@@ -14,7 +14,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --test test/
+      # Über make statt direkt node --test: so gibt es nur eine Definition
+      # der Testsuite (das Makefile-Ziel), lokal und in der CI identisch —
+      # ein direkter Aufruf war zuvor auseinandergelaufen (154 statt 151).
+      - run: make test
       # Layer 1 des A11y-Harness braucht ripgrep und kein Netz.
       - run: sudo apt-get install -y ripgrep
       - run: .claude/skills/web-accessibility-audit/scripts/a11y-grep.sh --all . --strict
@@ -31,5 +34,6 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       # Die Oberflächentests laufen gegen Stubs, nicht gegen die echten
-      # Dienste — deshalb sind sie hier zulässig.
-      - run: npx playwright test
+      # Dienste — deshalb sind sie hier zulässig. Über make e2e statt
+      # direkt npx: dasselbe Ziel wie lokal, eine Definition.
+      - run: make e2e
