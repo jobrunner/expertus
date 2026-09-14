@@ -22,9 +22,12 @@ test('eine eingegebene Koordinate holt die Kopfdaten', async ({ page }) => {
   await page.getByLabel('Breite').fill('52.52')
   await page.getByLabel('Länge').fill('13.405')
   await page.getByLabel('Länge').blur()
-  await expect(page.getByText('Germany')).toBeVisible()
-  await expect(page.getByText('654')).toBeVisible()
-  await expect(page.getByText('N_COAST')).toBeVisible()
+  // Ein Auswahlfeld hat keinen eigenen sichtbaren Textknoten für die
+  // gewählte Option — geprüft wird deshalb der Feldwert selbst, nicht
+  // getByText.
+  await expect(page.getByLabel('Country')).toHaveValue('Germany')
+  await expect(page.getByLabel('Ecoreg')).toHaveValue('654')
+  await expect(page.getByLabel('Coast_EEA')).toHaveValue('N_COAST')
 })
 
 test('die Herkunft jedes Kopfdatums ist sichtbar', async ({ page }) => {
@@ -57,7 +60,10 @@ test('ein nicht ableitbares Feld ist hervorgehoben und von Hand setzbar', async 
   await page.getByLabel('Länge').blur()
   const zeile = page.getByRole('row', { name: /Ecoreg/ })
   await expect(zeile).toContainText('nicht ableitbar')
+  // Das Kopfdatum übernimmt erst beim Verlassen des Felds, nicht bei
+  // jedem Zeichen — wie ein Mensch es tut: tippen, dann wegklicken.
   await page.getByLabel('Ecoreg').fill('664')
+  await page.getByLabel('Ecoreg').blur()
   await expect(zeile).toContainText('von Hand gesetzt')
 })
 

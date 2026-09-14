@@ -8,7 +8,7 @@ import { createOrtus } from './adapters/ortus.js'
 import { createHostus } from './adapters/hostus.js'
 import { createHabitatus } from './adapters/habitatus.js'
 import { createActions } from './actions.js'
-import { announce, clear, el } from './dom.js'
+import { clear, el } from './dom.js'
 import { renderPlotList } from './views/plot-list.js'
 import { renderPlotForm } from './views/plot-form.js'
 
@@ -61,9 +61,11 @@ try {
   })
 
   store.set({ index: storage.list() })
-  store.subscribe((state) => {
-    if (state.error) announce(live, state.error.message)
-  })
+  // Fehler werden nicht mehr hier global angesagt: jede Ansicht zeigt sie
+  // selbst, sichtbar und mit role="alert" (siehe plot-form.js) — der
+  // globale Live-Bereich hätte dieselbe Meldung sonst ein zweites Mal
+  // angesagt. Ab Task 17 sagt diese Stelle stattdessen Auswertungsergebnisse
+  // an; #meldungen (live) bleibt dafür bestehen.
   router.start()
 } catch (err) {
   mount.append(Object.assign(document.createElement('p'), { className: 'warn', textContent: err.message }))

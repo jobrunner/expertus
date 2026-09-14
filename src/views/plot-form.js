@@ -1,7 +1,7 @@
 // Die Maske: Standort, Kopfdaten und die Plätze für Arten und Auswertung
 // (Task 16/17 füllen diese als sections). Kopfdaten werden nebenläufig
 // geholt — pending blockiert nur den Kopfdaten-Abschnitt, nie die Maske.
-import { el, clear } from '../dom.js'
+import { el, clear, preserveFocus } from '../dom.js'
 import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS } from '../header-map.js'
 import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
 import { originLabel } from '../format.js'
@@ -20,22 +20,37 @@ const MANUAL_INPUT = {
 
 export function renderPlotForm({ mount, store, actions, router, sections = [] }) {
   function draw() {
-    const { plot, headerPending } = store.get()
-    if (!plot) {
+    // Ein Neuaufbau ersetzt den gesamten Einhängepunkt und würde sonst den
+    // Fokus verwerfen: nach jedem Zeichen in einem Zahlenfeld läge er im
+    // Nichts, und die Maske wäre über Tastatur unbenutzbar. preserveFocus
+    // merkt sich Element und Schreibmarke vor dem Leeren und stellt beides
+    // nach dem Aufbau wieder her.
+    preserveFocus(mount, () => {
+      const { plot, headerPending, error } = store.get()
+      if (!plot) {
+        clear(mount)
+        mount.append(el('p', { class: 'warn', text: 'Diesen Plot gibt es nicht.' }))
+        return
+      }
       clear(mount)
-      mount.append(el('p', { class: 'warn', text: 'Diesen Plot gibt es nicht.' }))
-      return
-    }
-    clear(mount)
-    // Fehler werden nicht noch einmal lokal ausgegeben: die globale
-    // Live-Region (#meldungen, siehe app.js) meldet sie bereits app-weit —
-    // genau wie in plot-list.js.
-    mount.append(
-      el('h2', { text: `Plot ${plot.sampleId}` }),
-      standort(plot),
-      kopfdaten(plot, headerPending),
-      ...sections.map((render) => render(plot)),
-    )
+      // Native append() (anders als unser el()) wandelt ein rohes `null`
+      // in den Text "null" um, statt es zu überspringen — deshalb wird
+      // hier gefiltert, bevor angehängt wird.
+      mount.append(
+        ...[
+          el('h2', { text: `Plot ${plot.sampleId}` }),
+          // Lokal UND sichtbar: der globale Live-Bereich (#meldungen) ist
+          // bewusst nur für Ansagen da und optisch verborgen. Eine Meldung
+          // wie eine Sample-ID-Kollision braucht eine sehbare Ausgabe direkt
+          // in der Maske; role="alert" sorgt zugleich für die Ansage, ohne
+          // dass der globale Bereich denselben Text noch einmal spiegelt.
+          error ? el('p', { class: 'warn', role: 'alert', text: error.message }) : null,
+          standort(plot),
+          kopfdaten(plot, headerPending),
+          ...sections.map((render) => render(plot)),
+        ].filter(Boolean),
+      )
+    })
   }
 
   function standort(plot) {
@@ -128,25 +143,23 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     const spec = MANUAL_INPUT[field]
     const id = `h-${field.replace(/[^A-Za-z0-9_-]/g, '-')}`
     const control = spec.kind === 'select'
-      // Die Option, die dem aktuellen Wert entspricht, bleibt hier bewusst
-      // aus der Liste ausgespart: der aktuelle Wert steht bereits sichtbar
-      // im Wert-Text daneben, ein zweites <option>-Element mit demselben
-      // Text würde ihn nur unsichtbar doppeln.
+      // Das volle Vokabular bleibt immer wählbar; die zum aktuellen Wert
+      // passende Option trägt "selected", die leere nur, wenn nichts
+      // gesetzt ist. Fehlt die passende Option, hält der Nutzer einen
+      // gesetzten Wert für fehlend — und kann ihn nicht zurückwählen.
       ? el('select', { id, onChange: (e) => actions.setHeaderField(field, e.target.value) },
           [el('option', { value: '', text: '—', selected: value == null }),
-           ...spec.options.filter((o) => o !== value).map((o) => el('option', { value: o, text: o }))])
-      // 'input' statt 'change': eine Eingabe soll sofort übernommen werden,
-      // nicht erst beim Verlassen des Felds.
+           ...spec.options.map((o) => el('option', { value: o, text: o, selected: o === value }))])
+      // Erst beim Verlassen des Felds übernehmen, nicht bei jedem Zeichen:
+      // eine Aktion pro Tastendruck würde die Maske neu zeichnen und dabei
+      // den Fokus verlieren — über Tastatur ließe sich dann nur ein
+      // einziges Zeichen eintippen.
       : el('input', { id, type: 'number', step: 'any', value: value ?? '',
-          onInput: (e) => actions.setHeaderField(field, Number(e.target.value)) })
+          onBlur: (e) => actions.setHeaderField(field, Number(e.target.value)) })
 
     return el('tr', {}, [
       el('th', { scope: 'row' }, el('label', { for: control.id, text: field })),
-      el('td', {}, [
-        value != null ? el('span', { class: 'wert', text: String(value) }) : null,
-        control,
-        beleg(plot, field),
-      ]),
+      el('td', {}, [control, beleg(plot, field)]),
       el('td', { class: origin === 'missing' ? 'warn' : 'muted', text: originLabel(origin) }),
     ])
   }
