@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # der A11y-Skill hängt als Submodul darin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --test test/
+      # Layer 1 des A11y-Harness braucht ripgrep und kein Netz.
+      - run: sudo apt-get install -y ripgrep
+      - run: .claude/skills/web-accessibility-audit/scripts/a11y-grep.sh --all . --strict
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Die Oberflächentests laufen gegen Stubs, nicht gegen die echten
+      # Dienste — deshalb sind sie hier zulässig.
+      - run: npx playwright test

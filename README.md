@@ -16,6 +16,15 @@ make serve    # lokaler Statik-Server auf :5173
 make check    # Pre-Merge-Gate: test + a11y
 ```
 
+| Befehl | Wirkung |
+|---|---|
+| `make test` | Unit-Suite (`node:test`), kein Netz, kein Browser |
+| `make e2e` | Oberflächentests im Browser gegen Stubs |
+| `make a11y` | WCAG-2.2-AA-Gate: Grep, axe über die schwierigen Zustände |
+| `make check` | Pre-Merge-Gate: `test` + `a11y` |
+| `make smoke` | Abgleich gegen die **echten** Dienste; nicht in der CI |
+| `make docker` / `make docker-test` | Image bauen, starten, prüfen |
+
 ## Dienste
 
 | Dienst | Rolle | Vorgabe |
