@@ -31,9 +31,9 @@ test('gespeicherte Plots stehen mit Ergebnis und Status in der Tabelle', async (
 })
 
 test('das Fragezeichen wird ausgeschrieben', async ({ page }) => {
-  await seed(page, [{ sampleId: 'A', result: '?', status: 'ok', species: ['X'] }])
+  await seed(page, [{ sampleId: 'Fragezeichen-01', result: '?', status: 'ok', species: ['X'] }])
   await page.goto('/#/plots')
-  await expect(page.getByRole('row', { name: /A/ })).toContainText('keine Regel trifft')
+  await expect(page.getByRole('row', { name: /Fragezeichen-01/ })).toContainText('keine Regel trifft')
 })
 
 test('die Suche greift über Sample-ID und Artname', async ({ page }) => {
