@@ -1,6 +1,5 @@
 // Bootstrap: Konfiguration laden, Module verdrahten, Router starten.
-// Die Ansichten kommen in den Tasks 14 bis 17 dazu; bis dahin zeigt die
-// Anwendung ein leeres Gerüst, das schon prüfbar ist.
+// Die weiteren Ansichten kommen in den Tasks 15 bis 17 dazu.
 import { loadConfig } from './config.js'
 import { createStore } from './store.js'
 import { createRouter } from './router.js'
@@ -10,6 +9,7 @@ import { createHostus } from './adapters/hostus.js'
 import { createHabitatus } from './adapters/habitatus.js'
 import { createActions } from './actions.js'
 import { announce, clear } from './dom.js'
+import { renderPlotList } from './views/plot-list.js'
 
 const mount = document.getElementById('ansicht')
 const live = document.getElementById('meldungen')
@@ -30,6 +30,8 @@ try {
     window,
     onRoute(route) {
       store.set({ route })
+      clear(mount)
+      if (route.name === 'list') renderPlotList({ mount, store, storage, actions, router })
     },
   })
 
@@ -38,9 +40,6 @@ try {
     if (state.error) announce(live, state.error.message)
   })
   router.start()
-
-  // In Task 14 bis 17 ersetzt durch die Ansichten.
-  window.legulus = { store, actions, hostus, router }
 } catch (err) {
   mount.append(Object.assign(document.createElement('p'), { className: 'warn', textContent: err.message }))
 }

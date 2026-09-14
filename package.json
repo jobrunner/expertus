@@ -5,6 +5,11 @@
   "type": "module",
   "description": "EUNIS-Habitatbestimmung im Feld",
   "scripts": {
-    "test": "node --test $(find test -name '*.test.js' | sort)"
+    "test": "node --test $(find test -name '*.test.js' | sort)",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
   }
 }

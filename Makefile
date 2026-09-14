@@ -1,4 +1,4 @@
-.PHONY: test check serve docker a11y smoke
+.PHONY: test check serve docker a11y smoke e2e
 
 test:
 	node --test $$(find test -name '*.test.js' | sort)
@@ -13,6 +13,9 @@ smoke:
 
 a11y:
 	.claude/skills/web-accessibility-audit/scripts/a11y-grep.sh --all . --strict
+
+e2e:
+	npx playwright test
 
 docker:
 	docker build -t legulus:dev .
