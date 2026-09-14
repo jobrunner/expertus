@@ -257,3 +257,92 @@ test('rename auf eine belegte ID meldet den Konflikt, ohne zu überschreiben', (
   assert.match(store.get().error.message, /bereits vergeben/)
   assert.equal(storage.load('B').sampleId, 'B')
 })
+
+test('ein Koordinatenwechsel setzt die aus ortus stammenden Kopfdaten zurück', async () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  await actions.fetchHeader()
+  actions.setHeaderField('Coast_EEA', 'BAL_COAST')
+  // Tel Aviv statt Berlin: die Kopfdaten des alten Punktes dürfen nicht
+  // stehen bleiben und still mitausgewertet werden.
+  actions.setCoordinate({ lat: 32.08, lon: 34.78, source: 'manual' })
+  const plot = store.get().plot
+  assert.equal(plot.headerOrigin.Country, 'missing')
+  assert.equal(plot.header.Country, null)
+  assert.equal(plot.headerOrigin.Ecoreg, 'missing')
+  assert.deepEqual(plot.headerEvidence, {})
+  // Ein von Hand gesetztes Feld bleibt unangetastet.
+  assert.equal(plot.headerOrigin.Coast_EEA, 'manual')
+  assert.equal(plot.header.Coast_EEA, 'BAL_COAST')
+  assert.match(actions.blockingReason(), /Country/)
+})
+
+test('während des Kopfdaten-Abrufs blockiert blockingReason, auch wenn sonst alles bereit ist', async () => {
+  let freigeben
+  const ortus = { lookup: () => new Promise((res) => (freigeben = () => res({ header: HEADER, origin: ORIGIN, evidence: {} }))) }
+  const { actions } = setup({ ortus })
+  actions.newPlot()
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  const erster = actions.fetchHeader()
+  freigeben()
+  await erster
+  actions.addSpecies({ name: 'Festuca ovina', entry: 'manual' })
+  actions.setCover(0, { classCode: '3' })
+  assert.equal(actions.blockingReason(), null)
+  // Zweiter Abruf: solange er läuft, gehören die angezeigten Kopfdaten noch
+  // nicht sicher zur aktuellen Koordinate.
+  const zweiter = actions.fetchHeader()
+  assert.match(actions.blockingReason(), /Kopfdaten werden noch geholt/)
+  freigeben()
+  await zweiter
+  assert.equal(actions.blockingReason(), null)
+})
+
+test('ein fehlgeschlagener Schreibvorgang landet als Fehler im Zustand, statt durchzuschlagen', () => {
+  const backend = createMemoryStorage()
+  let voll = false
+  const original = backend.setItem.bind(backend)
+  backend.setItem = (k, v) => {
+    if (voll) throw Object.assign(new Error('QuotaExceededError'), { name: 'QuotaExceededError' })
+    original(k, v)
+  }
+  const store = createStore({ plot: null, headerPending: false, evaluating: false, error: null })
+  const storage = createStorage({ backend, now: () => '2026-09-14T10:00:00.000Z' })
+  const actions = createActions({
+    store, storage,
+    ortus: { lookup: async () => ({ header: HEADER, origin: ORIGIN, evidence: {} }) },
+    habitatus: { classify: async () => ({}) },
+    now: () => '2026-09-14T10:00:00.000Z',
+  })
+  actions.newPlot()
+  voll = true
+  assert.doesNotThrow(() => actions.addSpecies({ name: 'Festuca ovina', entry: 'manual' }))
+  assert.match(store.get().error.message, /lokale Speicher/)
+  assert.equal(store.get().plot.species.length, 0)
+  // Auch das allererste Speichern eines Plots darf nicht lautlos scheitern.
+  store.set({ error: null })
+  assert.doesNotThrow(() => assert.equal(actions.newPlot(), null))
+  assert.match(store.get().error.message, /lokale Speicher/)
+})
+
+test('die Leeroption der Klassenauswahl setzt die Deckung auf null zurück', () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  actions.addSpecies({ name: 'Festuca ovina', entry: 'manual' })
+  actions.setCover(0, { classCode: '3' })
+  actions.setCover(0, { classCode: '' })
+  assert.equal(store.get().plot.species[0].cover, null)
+  assert.equal(store.get().plot.species[0].coverClass, null)
+})
+
+test('ein geleertes Kopfdatenfeld gilt als fehlend, nicht als von Hand gesetzte Null', async () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  await actions.fetchHeader()
+  actions.setHeaderField('Ecoreg', null)
+  assert.equal(store.get().plot.header.Ecoreg, null)
+  assert.equal(store.get().plot.headerOrigin.Ecoreg, 'missing')
+  assert.match(actions.blockingReason(), /Ecoreg/)
+})

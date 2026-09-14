@@ -21,7 +21,13 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
     mount.append(
       el('h2', { text: 'Plots' }),
       el('div', { class: 'toolbar' }, [
-        el('button', { type: 'button', text: 'Neuen Plot anlegen', onClick: () => router.go({ name: 'plot', sampleId: actions.newPlot().sampleId }) }),
+        // newPlot kann fehlschlagen (voller Speicher); dann gibt es keinen
+        // Plot, zu dem navigiert werden könnte — die Meldung steht im
+        // Zustand und wird von der Maske angezeigt.
+        el('button', { type: 'button', text: 'Neuen Plot anlegen', onClick: () => {
+          const neu = actions.newPlot()
+          if (neu) router.go({ name: 'plot', sampleId: neu.sampleId })
+        } }),
         labelled('Suche', el('input', { type: 'search', id: 'suche', value: query, onInput: (e) => { query = e.target.value; draw() } })),
         labelled('Status', el('select', { id: 'status', onChange: (e) => { status = e.target.value; draw() } },
           STATUS_OPTIONEN.map(([v, t]) => el('option', { value: v, text: t, selected: v === status })))),

@@ -13,6 +13,19 @@ export class CollisionError extends Error {
   }
 }
 
+// Ein fehlgeschlagener Schreibvorgang verliert die Eingabe endgültig: es
+// gibt weder serverseitige Ablage noch Export, der Browser ist die einzige
+// Kopie. Der Fehler bekommt deshalb einen eigenen Typ, damit die Aktionen
+// ihn erkennen und in der Maske anzeigen können, statt ihn als
+// unbehandelten Fehler in der Konsole enden zu lassen.
+export class StorageFullError extends Error {
+  constructor(cause) {
+    super('Der lokale Speicher des Browsers ist voll — die letzte Eingabe wurde nicht gesichert. Bitte nicht mehr benötigte Plots löschen und die Eingabe wiederholen.')
+    this.name = 'StorageFullError'
+    this.cause = cause
+  }
+}
+
 export function createStorage({ backend, now = () => new Date().toISOString() }) {
   function readIndex() {
     // Ein beschädigter Index ist ärgerlich, aber kein Grund, die App
@@ -43,9 +56,17 @@ export function createStorage({ backend, now = () => new Date().toISOString() })
   function save(plot) {
     const stamp = now()
     const stored = { ...plot, createdAt: plot.createdAt ?? stamp, updatedAt: stamp }
-    backend.setItem(PLOT_PREFIX + stored.sampleId, JSON.stringify(stored))
-    const rest = readIndex().filter((e) => e.sampleId !== stored.sampleId)
-    writeIndex([entryFor(stored), ...rest].sort(byUpdatedDesc))
+    // Voller Speicher, privater Modus, Speicherdruck auf Mobilgeräten: das
+    // Schreiben kann werfen. Dann muss oben etwas davon erfahren — ein
+    // stilles Durchrutschen hieße, dass der Nutzer im Gelände weiter
+    // erfasst, ohne dass irgendetwas gesichert wird.
+    try {
+      backend.setItem(PLOT_PREFIX + stored.sampleId, JSON.stringify(stored))
+      const rest = readIndex().filter((e) => e.sampleId !== stored.sampleId)
+      writeIndex([entryFor(stored), ...rest].sort(byUpdatedDesc))
+    } catch (err) {
+      throw new StorageFullError(err)
+    }
     return stored
   }
 

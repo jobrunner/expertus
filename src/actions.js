@@ -1,7 +1,7 @@
 // Orchestrierung. Die einzige Stelle, die mehrere Adapter kennt; Ansichten
 // rufen Aktionen, nie Adapter.
 import { HEADER_FIELDS, missingFields } from './header-map.js'
-import { markDirty, CollisionError } from './storage.js'
+import { markDirty, CollisionError, StorageFullError } from './storage.js'
 import { classFor, isValidPercent, toPercent } from './cover.js'
 
 export function createActions({ store, storage, ortus, habitatus, now = () => new Date().toISOString() }) {
@@ -25,7 +25,18 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     if (!current) return null
     const next = mutate({ ...current })
     const marked = dirty ? markDirty(next) : next
-    const saved = storage.save(marked)
+    // Ein Schreibfehler darf nicht als unbehandelter Fehler in der Konsole
+    // enden: der Browser ist die einzige Kopie, und der Nutzer erfasst im
+    // Gelände sonst ahnungslos weiter. Er wird deshalb in den Zustand
+    // gesetzt, wo die Maske ihn sichtbar und mit Alarmrolle anzeigt.
+    let saved
+    try {
+      saved = storage.save(marked)
+    } catch (err) {
+      if (!(err instanceof StorageFullError)) throw err
+      store.set({ error: err, ...extra })
+      return null
+    }
     store.set({ plot: saved, index: storage.list(), ...extra })
     return saved
   }
@@ -52,7 +63,17 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
         species: [],
         evaluation: null,
       }
-      const saved = storage.save(fresh)
+      // Wie in update(): schlägt das erste Speichern fehl, entsteht gar
+      // kein Plot — das muss sichtbar werden, nicht bloß in der Konsole
+      // stehen.
+      let saved
+      try {
+        saved = storage.save(fresh)
+      } catch (err) {
+        if (!(err instanceof StorageFullError)) throw err
+        store.set({ error: err })
+        return null
+      }
       store.set({ plot: saved, error: null, index: storage.list() })
       return saved
     },
@@ -63,8 +84,35 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
       return found
     },
 
+    // Kopfdaten gehören zu genau einer Koordinate. Bleiben sie bei einem
+    // Koordinatenwechsel stehen, werden die Werte des ALTEN Punktes
+    // mitausgewertet — habitatus zwingt Unauflösbares intern auf null und
+    // wertet zweiwertig aus, ein falsches Kopfdatum erzeugt dort also kein
+    // "unbekannt", sondern still ein falsches Habitat. Deshalb fällt jedes
+    // aus ortus stammende Feld auf 'missing' zurück; es blockiert damit die
+    // Auswertung, bis die Antwort zum neuen Punkt da ist. Von Hand gesetzte
+    // Felder bleiben stehen — konsistent damit, dass eine manuelle
+    // Übersteuerung auch eine eintreffende ortus-Antwort überlebt. Die
+    // Belege gehören zum alten Punkt und werden verworfen.
     setCoordinate({ lat, lon, source, accuracyM = null }) {
-      return update((p) => ({ ...p, coordinate: { lat, lon }, coordSource: source, accuracyM }))
+      return update((p) => {
+        const header = { ...p.header }
+        const origin = { ...p.headerOrigin }
+        for (const field of HEADER_FIELDS) {
+          if (origin[field] === 'manual') continue
+          header[field] = null
+          origin[field] = 'missing'
+        }
+        return {
+          ...p,
+          coordinate: { lat, lon },
+          coordSource: source,
+          accuracyM,
+          header,
+          headerOrigin: origin,
+          headerEvidence: {},
+        }
+      })
     },
 
     async fetchHeader() {
@@ -95,20 +143,24 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
         }, { extra: { headerPending: false } })
       } catch (err) {
         // Ein Abbruch ist kein Fehler, sondern der Normalfall beim
-        // Nachtippen einer Koordinate.
-        if (err?.name === 'AbortError') {
-          store.set({ headerPending: false })
-          return
-        }
+        // Nachtippen einer Koordinate. headerPending wird hier NICHT
+        // zurückgesetzt: der Abbruch kommt immer von einer nachfolgenden
+        // Abfrage, die bereits läuft — der Ladezustand gehört dann ihr.
+        if (err?.name === 'AbortError') return
         store.set({ headerPending: false, error: err })
       }
     },
 
+    // Ein geleertes Feld ist keine Eingabe, sondern das Gegenteil: es wird
+    // zu 'missing' und blockiert damit die Auswertung. Würde es als
+    // "von Hand gesetzt" mit dem Wert null (oder, aus einem Zahlenfeld,
+    // mit 0) gelten, ginge dieser Wert still an habitatus.
     setHeaderField(field, value) {
+      const leer = value === null || value === undefined || value === ''
       return update((p) => ({
         ...p,
-        header: { ...p.header, [field]: value },
-        headerOrigin: { ...p.headerOrigin, [field]: 'manual' },
+        header: { ...p.header, [field]: leer ? null : value },
+        headerOrigin: { ...p.headerOrigin, [field]: leer ? 'missing' : 'manual' },
       }))
     },
 
@@ -126,9 +178,16 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     setCover(index, { percent, classCode }) {
       return update((p) => {
         const scale = p.scale
-        const value = classCode !== undefined ? toPercent(scale, classCode) : percent
+        // Die Leeroption der Klassenauswahl schickt einen leeren Code: das
+        // heißt "keine Deckung", nicht "unbekannte Klasse" — toPercent
+        // würde hier sonst werfen, und Anzeige und Datenbestand liefen
+        // auseinander.
+        const gewaehlt = classCode !== undefined
+        const value = gewaehlt ? (classCode === '' ? null : toPercent(scale, classCode)) : percent
         const species = p.species.map((s, i) =>
-          i === index ? { ...s, cover: value, coverClass: classFor(scale, value) } : s,
+          i === index
+            ? { ...s, cover: value, coverClass: value === null ? null : classFor(scale, value) }
+            : s,
         )
         return { ...p, species }
       })
@@ -156,7 +215,9 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
         store.set({ plot: moved, error: null, index: storage.list() })
         return moved
       } catch (err) {
-        if (err instanceof CollisionError) {
+        // Kollision wie Schreibfehler: beide sind für den Nutzer bestimmt
+        // und dürfen nicht als unbehandelter Fehler enden.
+        if (err instanceof CollisionError || err instanceof StorageFullError) {
           store.set({ error: err })
           return null
         }
@@ -167,6 +228,11 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     blockingReason() {
       const current = plot()
       if (!current) return 'Kein Plot geöffnet.'
+      // Solange der Abruf läuft, gehören die angezeigten Kopfdaten noch
+      // nicht sicher zur aktuellen Koordinate. Ohne diesen Grund wäre der
+      // Auswerten-Knopf frei, während die Maske "Kopfdaten werden geholt …"
+      // zeigt — abgesetzt würden dann die Kopfdaten des alten Punktes.
+      if (store.get().headerPending) return 'Kopfdaten werden noch geholt.'
       const fehlend = missingFields(current.headerOrigin ?? emptyOrigin())
       if (fehlend.length) return `Kopfdaten fehlen: ${fehlend.join(', ')}`
       if (!current.species.length) return 'Mindestens eine Art wird gebraucht.'
