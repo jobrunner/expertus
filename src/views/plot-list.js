@@ -53,6 +53,11 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
     return el('p', {}, [el('label', { for: control.id, text }), control])
   }
 
-  store.subscribe(draw)
+  // Ohne Abmeldung zeichnet eine längst verlassene Ansicht bei jeder
+  // Zustandsänderung weiter in den gemeinsamen Einhängepunkt: der Store
+  // kennt sie noch, obwohl die Route längst weitergezogen ist.
+  const unsubscribe = store.subscribe(draw)
   draw()
+
+  return () => unsubscribe()
 }

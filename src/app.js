@@ -26,12 +26,19 @@ try {
   })
   const hostus = createHostus({ baseUrl: config.hostusBaseUrl })
 
+  // Die aktive Ansicht bleibt sonst am Store angemeldet: ohne Abmeldung
+  // zeichnet eine längst verlassene Ansicht bei jeder Zustandsänderung
+  // weiter in den gemeinsamen Einhängepunkt, unabhängig von der Route.
+  let cleanupView = null
+
   const router = createRouter({
     window,
     onRoute(route) {
+      cleanupView?.()
+      cleanupView = null
       store.set({ route })
       clear(mount)
-      if (route.name === 'list') renderPlotList({ mount, store, storage, actions, router })
+      if (route.name === 'list') cleanupView = renderPlotList({ mount, store, storage, actions, router })
     },
   })
 

@@ -79,6 +79,47 @@ test('die Liste ist per Tastatur erreichbar und zeigt den Fokus', async ({ page 
   await expect(page.getByRole('link', { name: 'Zum Inhalt springen' })).toBeFocused()
 })
 
+test('beim Routenwechsel meldet sich die verlassene Liste vom Store ab', async ({ page }) => {
+  // Zählt Lesezugriffe auf den Index. Eine Ansicht, die sich nicht
+  // abmeldet, zeichnet bei jedem künftigen store.set() erneut — auch
+  // nachdem ihre Route längst verlassen wurde — und liest dafür jedes Mal
+  // erneut den Index. Ohne Abmeldung wächst die Anzahl der Lesevorgänge
+  // pro Klick mit jeder vorherigen Rückkehr zur Liste; mit sauberer
+  // Abmeldung bleibt sie gleich, egal wie oft schon navigiert wurde.
+  await page.addInitScript(() => {
+    window.__indexReads = 0
+    const original = Storage.prototype.getItem
+    Storage.prototype.getItem = function (key) {
+      if (key === 'legulus.index') window.__indexReads++
+      return original.call(this, key)
+    }
+  })
+  await page.goto('/#/plots')
+
+  async function neuerPlotUndZurueck() {
+    await page.evaluate(() => { window.__indexReads = 0 })
+    await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+    await expect(page).toHaveURL(/#\/plot\//)
+    const reads = await page.evaluate(() => window.__indexReads)
+    await page.goBack()
+    await expect(page).toHaveURL(/#\/plots$/)
+    return reads
+  }
+
+  const ersteRunde = await neuerPlotUndZurueck()
+  await neuerPlotUndZurueck()
+  await neuerPlotUndZurueck()
+  const vierteRunde = await neuerPlotUndZurueck()
+
+  // Dieselbe Aktion (ein Klick auf "Neuen Plot anlegen") muss unabhängig
+  // von der Anzahl vorheriger Rundgänge gleich viele Indexlesevorgänge
+  // auslösen: bleibt bei jeder Rückkehr zur Liste stets nur eine
+  // Abonnentin aktiv, ändert sich die Zahl nicht. Ohne Abmeldung hätte
+  // sich bis zur vierten Runde bereits eine dritte Abonnentin angesammelt,
+  // und die Zahl wäre entsprechend gewachsen.
+  expect(vierteRunde).toBe(ersteRunde)
+})
+
 async function seed(page, plots) {
   await page.addInitScript((rows) => {
     const index = []
