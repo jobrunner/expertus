@@ -1,0 +1,293 @@
+{
+  "coordinate": {
+    "srid": 4326,
+    "x": 34.78,
+    "y": 32.08
+  },
+  "gazetteer": {
+    "admin": {
+      "country_iso": "IL",
+      "hierarchy": [
+        {
+          "equivalent": "municipality",
+          "equivalent_description": "Municipality / commune (basic local government unit)",
+          "level": 8,
+          "local_term": "עיר, מועצה מקומית, מועצה אזורית / City, Local council, Regional council (in Palestinian Territory: Municipality grade 1, 2)",
+          "name": "Tel-Aviv",
+          "name_native": "תל־אביב–יפו",
+          "name_source": "osm-en"
+        },
+        {
+          "equivalent": "county",
+          "equivalent_description": "County or district tier",
+          "level": 5,
+          "local_term": "נפה / Subdistrict (West Bank: Areas A, B, C)",
+          "name": "Tel Aviv Subdistrict",
+          "name_native": "נפת תל אביב",
+          "name_source": "osm-en"
+        },
+        {
+          "equivalent": "district",
+          "equivalent_description": "District / subdistrict",
+          "level": 4,
+          "local_term": "מחוז / District (including West Bank and Gaza Strip)",
+          "name": "Tel-Aviv District",
+          "name_native": "מחוז תל אביב",
+          "name_source": "osm-en"
+        },
+        {
+          "equivalent": "country",
+          "equivalent_description": "Sovereign state (admin_level 2)",
+          "level": 2,
+          "local_term": "Palestine",
+          "name": "Israel",
+          "name_native": "ישראל",
+          "name_source": "osm-en"
+        },
+        {
+          "equivalent": "country",
+          "equivalent_description": "Sovereign state (admin_level 2)",
+          "level": 2,
+          "local_term": "Israel / Palestine",
+          "name": "Israel",
+          "name_native": "",
+          "name_source": "latin-osm"
+        }
+      ]
+    },
+    "available": {
+      "elevation": true,
+      "exposure": true,
+      "islands": true,
+      "mountains": true
+    },
+    "bearing": {
+      "azimuth": 0,
+      "class": "city",
+      "compass": "",
+      "distance_km": 0.6119190322073265,
+      "inside": true,
+      "label": "in Tel Aviv",
+      "name_native": "תל אביב–יפו",
+      "name_source": "osm-en",
+      "reference": "Tel Aviv"
+    },
+    "elevation": {
+      "accuracy_basis": "",
+      "accuracy_m": 2.3000000000000003,
+      "horizontal_accuracy_m": 0,
+      "meters": 16,
+      "sea_level": false,
+      "source": {
+        "attribution": "© DLR e.V. 2010-2014 und © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+        "name": "Copernicus DEM GLO-30",
+        "url": "https://doi.org/10.5270/ESA-c5d3d65"
+      },
+      "surface_model": "",
+      "vertical_datum": "EGM2008"
+    },
+    "exposure": {
+      "aspect_compass": "E",
+      "aspect_deg": 86.00908690157023,
+      "flat": false,
+      "sample_spacing_m": 30,
+      "slope_deg": 10.181894327886761,
+      "slope_percent": 17.960218385210254,
+      "source": {
+        "attribution": "© DLR e.V. 2010-2014 und © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+        "name": "Copernicus DEM GLO-30",
+        "url": "https://doi.org/10.5270/ESA-c5d3d65"
+      }
+    },
+    "islands": null,
+    "mountains": null,
+    "sources": [
+      {
+        "code": "osm-en",
+        "long": "Human-curated English/romanized name from the OpenStreetMap `name:en` tag. Used for scripts where machine transliteration is lossy (Arabic, Hebrew); first step of the Arabic/Hebrew cascade.",
+        "short": "OSM name:en (curated)",
+        "standard": "OSM name:en"
+      },
+      {
+        "code": "latin-osm",
+        "long": "Taken verbatim from the OpenStreetMap `name` tag, which is already written in Latin script. No transliteration applied.",
+        "short": "OSM name (already Latin)",
+        "standard": ""
+      }
+    ],
+    "timings_ms": {
+      "bearing": 10,
+      "elevation": 0,
+      "exposure": 0,
+      "islands": 0,
+      "locate": 8,
+      "mountains": 0,
+      "total": 19
+    }
+  },
+  "processing_time_ms": 105,
+  "results": [
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 40073,
+          "layer": "ecoregions",
+          "properties": {
+            "BIOME_NAME": "Mediterranean Forests, Woodlands & Scrub",
+            "BIOME_NUM": 12,
+            "COLOR": "#F5A27A",
+            "COLOR_BIO": "#FE0000",
+            "COLOR_NNH": "#EE1E23",
+            "ECO_BIOME_": "PA12",
+            "ECO_ID": 791,
+            "ECO_NAME": "Eastern Mediterranean conifer-broadleaf forests",
+            "NNH": 4,
+            "NNH_NAME": "Nature Imperiled",
+            "REALM": "Palearctic",
+            "orig_id": 239
+          }
+        }
+      ],
+      "license": {
+        "attribution": "RESOLVE Ecoregions 2017 (Dinerstein et al. 2017)",
+        "name": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "query_time_ms": 0,
+      "source_id": "ecoregions-2017",
+      "source_name": "ecoregions-2017"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 120,
+          "layer": "vegetation",
+          "properties": {
+            "AREA": 2.844,
+            "CODE_D": "außereuropäisch",
+            "CODE_E": "non-European",
+            "COLOR_ID": 128,
+            "FORMATION": "grau",
+            "ID": 120,
+            "OVERVIEW": "non-European",
+            "PERIMETER": 34674752,
+            "RGB": 11711154,
+            "SHADE": 0,
+            "UEBERSICHT": "außereuropäisch",
+            "VEGT_EEA_": 4,
+            "VEGT_EEA_I": 3,
+            "name_de": "außereuropäisch",
+            "name_en": "non-European",
+            "name_source": "non_vegetation"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "© Bundesamt für Naturschutz (BfN). Bohn, U., Neuhäusl, R., unter Mitarbeit von Gollub, G., Hettwer, C., Neuhäuslová, Z., Raus, Th., Schlüter, H. & Weber, H. (2000/2003): Karte der natürlichen Vegetation Europas / Map of the Natural Vegetation of Europe. Maßstab 1:2 500 000. Münster (Landwirtschaftsverlag).",
+        "name": "Urheberrechtlich geschützt – alle Rechte vorbehalten",
+        "url": "https://www.bfn.de"
+      },
+      "query_time_ms": 25,
+      "source_id": "eurovegmap-2003",
+      "source_name": "eurovegmap-2003"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 8,
+          "layer": "classification",
+          "properties": {
+            "code": "Csa",
+            "color": "#FFFF00",
+            "description": "Temperate, dry summer, hot summer",
+            "group": "Temperate"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Beck et al. (2018), Scientific Data 5:180214",
+        "name": "CC-BY-4.0",
+        "url": "https://www.gloh2o.org/koppen/"
+      },
+      "query_time_ms": 1,
+      "source_id": "koeppen-geiger-1980-2016",
+      "source_name": "Köppen-Geiger climate classification 1980–2016 (Beck et al. 2018, V1)"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "timezones",
+          "properties": {
+            "orig_id": 241,
+            "rowid": 4461,
+            "tzid": "Asia/Jerusalem"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Timezone boundaries © timezone-boundary-builder contributors, derived from OpenStreetMap data © OpenStreetMap contributors, licensed under ODbL 1.0.",
+        "name": "ODbL-1.0",
+        "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+      },
+      "query_time_ms": 1,
+      "source_id": "timezones-2026a",
+      "source_name": "timezones-2026a"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 256,
+          "layer": "botanical_countries",
+          "properties": {
+            "LEVEL1_COD": 3,
+            "LEVEL1_NAM": "ASIA-TEMPERATE",
+            "LEVEL2_COD": 34,
+            "LEVEL2_NAM": "Western Asia",
+            "LEVEL3_COD": "PAL",
+            "LEVEL3_NAM": "Palestine"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Geometry © Natural Earth (public domain). Area coding: World Geographical Scheme for Recording Plant Distributions (WGSRPD), ed. 2 (Brummitt 2001), TDWG / Royal Botanic Gardens, Kew.",
+        "name": "Public Domain (geometry: Natural Earth)",
+        "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+      },
+      "query_time_ms": 2,
+      "source_id": "wgsrpd-level3",
+      "source_name": "wgsrpd-level3"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 3,
+          "layer": "realms",
+          "properties": {
+            "REALM": "Palearctic",
+            "REALMCODE": "PA"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "WWF, UNEP, UNEP-WCMC — Olson et al. (2004), Terrestrial Ecoregions of the World, BioScience 51:933–938; modified UNEP-WCMC (2011). Non-commercial use; commercial use requires prior written permission from UNEP-WCMC.",
+        "name": "UNEP-WCMC General Data License",
+        "url": "https://www.unep-wcmc.org/en/general-data-license"
+      },
+      "query_time_ms": 0,
+      "source_id": "biogeo-realms-world-2004",
+      "source_name": "biogeo-realms-world-2004"
+    }
+  ],
+  "total_features": 6,
+  "wgs84": {
+    "lat": 32.08,
+    "lon": 34.78
+  }
+}

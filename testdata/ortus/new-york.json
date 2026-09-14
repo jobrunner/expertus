@@ -1,0 +1,161 @@
+{
+  "coordinate": {
+    "srid": 4326,
+    "x": -74.006,
+    "y": 40.713
+  },
+  "gazetteer": {
+    "admin": null,
+    "available": {
+      "elevation": true,
+      "exposure": true,
+      "islands": true,
+      "mountains": true
+    },
+    "bearing": null,
+    "elevation": null,
+    "exposure": null,
+    "islands": null,
+    "mountains": null,
+    "sources": [],
+    "timings_ms": {
+      "bearing": 6,
+      "elevation": 0,
+      "exposure": 0,
+      "islands": 0,
+      "locate": 0,
+      "mountains": 0,
+      "total": 7
+    }
+  },
+  "processing_time_ms": 58,
+  "results": [
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 25,
+          "layer": "classification",
+          "properties": {
+            "code": "Dfa",
+            "color": "#00FFFF",
+            "description": "Cold, no dry season, hot summer",
+            "group": "Cold"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Beck et al. (2018), Scientific Data 5:180214",
+        "name": "CC-BY-4.0",
+        "url": "https://www.gloh2o.org/koppen/"
+      },
+      "query_time_ms": 0,
+      "source_id": "koeppen-geiger-1980-2016",
+      "source_name": "Köppen-Geiger climate classification 1980–2016 (Beck et al. 2018, V1)"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "timezones",
+          "properties": {
+            "orig_id": 154,
+            "rowid": 44202,
+            "tzid": "America/New_York"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Timezone boundaries © timezone-boundary-builder contributors, derived from OpenStreetMap data © OpenStreetMap contributors, licensed under ODbL 1.0.",
+        "name": "ODbL-1.0",
+        "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+      },
+      "query_time_ms": 0,
+      "source_id": "timezones-2026a",
+      "source_name": "timezones-2026a"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 245,
+          "layer": "botanical_countries",
+          "properties": {
+            "LEVEL1_COD": 7,
+            "LEVEL1_NAM": "NORTHERN AMERICA",
+            "LEVEL2_COD": 75,
+            "LEVEL2_NAM": "Northeastern U.S.A.",
+            "LEVEL3_COD": "NWY",
+            "LEVEL3_NAM": "New York"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Geometry © Natural Earth (public domain). Area coding: World Geographical Scheme for Recording Plant Distributions (WGSRPD), ed. 2 (Brummitt 2001), TDWG / Royal Botanic Gardens, Kew.",
+        "name": "Public Domain (geometry: Natural Earth)",
+        "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+      },
+      "query_time_ms": 1,
+      "source_id": "wgsrpd-level3",
+      "source_name": "wgsrpd-level3"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 2,
+          "layer": "realms",
+          "properties": {
+            "REALM": "Nearctic",
+            "REALMCODE": "NA"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "WWF, UNEP, UNEP-WCMC — Olson et al. (2004), Terrestrial Ecoregions of the World, BioScience 51:933–938; modified UNEP-WCMC (2011). Non-commercial use; commercial use requires prior written permission from UNEP-WCMC.",
+        "name": "UNEP-WCMC General Data License",
+        "url": "https://www.unep-wcmc.org/en/general-data-license"
+      },
+      "query_time_ms": 0,
+      "source_id": "biogeo-realms-world-2004",
+      "source_name": "biogeo-realms-world-2004"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 86964,
+          "layer": "ecoregions",
+          "properties": {
+            "BIOME_NAME": "Temperate Broadleaf & Mixed Forests",
+            "BIOME_NUM": 4,
+            "COLOR": "#38A700",
+            "COLOR_BIO": "#00734C",
+            "COLOR_NNH": "#EE1E23",
+            "ECO_BIOME_": "NE04",
+            "ECO_ID": 339,
+            "ECO_NAME": "Northeast US Coastal forests",
+            "NNH": 4,
+            "NNH_NAME": "Nature Imperiled",
+            "REALM": "Nearctic",
+            "orig_id": 500
+          }
+        }
+      ],
+      "license": {
+        "attribution": "RESOLVE Ecoregions 2017 (Dinerstein et al. 2017)",
+        "name": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "query_time_ms": 0,
+      "source_id": "ecoregions-2017",
+      "source_name": "ecoregions-2017"
+    }
+  ],
+  "total_features": 5,
+  "wgs84": {
+    "lat": 40.713,
+    "lon": -74.006
+  }
+}

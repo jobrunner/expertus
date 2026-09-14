@@ -1,0 +1,473 @@
+{
+  "coordinate": {
+    "srid": 4326,
+    "x": 8.31,
+    "y": 54.9
+  },
+  "gazetteer": {
+    "admin": {
+      "country_iso": "DE",
+      "hierarchy": [
+        {
+          "equivalent": "submunicipality",
+          "equivalent_description": "Other sub-municipal unit (quarter, ward, locality)",
+          "level": 10,
+          "local_term": "Stadtteil / Gemeindeteil ohne Selbstverwaltung / Gemarkung",
+          "name": "Westerland",
+          "name_native": "",
+          "name_source": "latin-osm"
+        },
+        {
+          "equivalent": "municipality",
+          "equivalent_description": "Municipality / commune (basic local government unit)",
+          "level": 8,
+          "local_term": "Stadt / Gemeinde",
+          "name": "Sylt",
+          "name_native": "",
+          "name_source": "latin-osm"
+        },
+        {
+          "equivalent": "county",
+          "equivalent_description": "County or district tier",
+          "level": 6,
+          "local_term": "Landkreis / Kreis / kreisfreie Stadt",
+          "name": "Kreis Nordfriesland",
+          "name_native": "",
+          "name_source": "latin-osm"
+        },
+        {
+          "equivalent": "state",
+          "equivalent_description": "First-order subdivision (Land, oblast, comunidad autónoma, ...)",
+          "level": 4,
+          "local_term": "Bundesland",
+          "name": "Schleswig-Holstein",
+          "name_native": "",
+          "name_source": "latin-osm"
+        },
+        {
+          "equivalent": "country",
+          "equivalent_description": "Sovereign state (admin_level 2)",
+          "level": 2,
+          "local_term": "Deutschland",
+          "name": "Deutschland",
+          "name_native": "",
+          "name_source": "latin-osm"
+        }
+      ]
+    },
+    "available": {
+      "elevation": true,
+      "exposure": true,
+      "islands": true,
+      "mountains": true
+    },
+    "bearing": {
+      "azimuth": 0,
+      "class": "town",
+      "compass": "",
+      "distance_km": 0.744408747510148,
+      "inside": true,
+      "label": "in Westerland",
+      "name_native": "",
+      "name_source": "latin-osm",
+      "reference": "Westerland"
+    },
+    "elevation": {
+      "accuracy_basis": "",
+      "accuracy_m": 0.4,
+      "horizontal_accuracy_m": 0,
+      "meters": 5,
+      "sea_level": false,
+      "source": {
+        "attribution": "© DLR e.V. 2010-2014 und © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+        "name": "Copernicus DEM GLO-30",
+        "url": "https://doi.org/10.5270/ESA-c5d3d65"
+      },
+      "surface_model": "",
+      "vertical_datum": "EGM2008"
+    },
+    "exposure": {
+      "aspect_compass": "",
+      "aspect_deg": null,
+      "flat": true,
+      "sample_spacing_m": 30,
+      "slope_deg": 0.3376147110174216,
+      "slope_percent": 0.5892556509887896,
+      "source": {
+        "attribution": "© DLR e.V. 2010-2014 und © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+        "name": "Copernicus DEM GLO-30",
+        "url": "https://doi.org/10.5270/ESA-c5d3d65"
+      }
+    },
+    "islands": [
+      {
+        "name": "Sylt",
+        "name_native": "",
+        "name_source": "latin-osm"
+      }
+    ],
+    "mountains": null,
+    "sources": [
+      {
+        "code": "latin-osm",
+        "long": "Taken verbatim from the OpenStreetMap `name` tag, which is already written in Latin script. No transliteration applied.",
+        "short": "OSM name (already Latin)",
+        "standard": ""
+      }
+    ],
+    "timings_ms": {
+      "bearing": 58,
+      "elevation": 0,
+      "exposure": 0,
+      "islands": 1,
+      "locate": 73,
+      "mountains": 0,
+      "total": 134
+    }
+  },
+  "processing_time_ms": 43,
+  "results": [
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 3,
+          "layer": "realms",
+          "properties": {
+            "REALM": "Palearctic",
+            "REALMCODE": "PA"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "WWF, UNEP, UNEP-WCMC — Olson et al. (2004), Terrestrial Ecoregions of the World, BioScience 51:933–938; modified UNEP-WCMC (2011). Non-commercial use; commercial use requires prior written permission from UNEP-WCMC.",
+        "name": "UNEP-WCMC General Data License",
+        "url": "https://www.unep-wcmc.org/en/general-data-license"
+      },
+      "query_time_ms": 1,
+      "source_id": "biogeo-realms-world-2004",
+      "source_name": "biogeo-realms-world-2004"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 614,
+          "layer": "dunes_bohn",
+          "properties": {
+            "bohn_unit": "",
+            "dunes_bohn": "N_DUNES",
+            "orig_id": 0
+          }
+        }
+      ],
+      "license": {
+        "attribution": "© Bundesamt für Naturschutz (BfN). Bohn, U., Neuhäusl, R., unter Mitarbeit von Gollub, G., Hettwer, C., Neuhäuslová, Z., Raus, Th., Schlüter, H. & Weber, H. (2000/2003): Karte der natürlichen Vegetation Europas / Map of the Natural Vegetation of Europe. Maßstab 1:2 500 000. Münster (Landwirtschaftsverlag). Dune selection from EUNIS-ESy, Bruelheide et al. 2021.",
+        "name": "Urheberrechtlich geschützt – alle Rechte vorbehalten",
+        "url": "https://www.bfn.de"
+      },
+      "query_time_ms": 1,
+      "source_id": "bohn-dunes-2019",
+      "source_name": "bohn-dunes-2019"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 1366,
+          "layer": "coast_eea",
+          "properties": {
+            "coast_eea": "ATL_COAST",
+            "orig_id": 5,
+            "sea_region": "North East Atlantic Ocean"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Sea regions: European Environment Agency (EEA) — MSFD Regions and Subregions, v2 (2022-10-03) and Europe Seas (2018-11-29), CC-BY-4.0. Coverage outline: © Bundesamt für Naturschutz (BfN). Bohn, U., Neuhäusl, R., unter Mitarbeit von Gollub, G., Hettwer, C., Neuhäuslová, Z., Raus, Th., Schlüter, H. & Weber, H. (2000/2003): Karte der natürlichen Vegetation Europas / Map of the Natural Vegetation of Europe. Maßstab 1:2 500 000. Münster (Landwirtschaftsverlag). Coastal band derived as a 10 km land/sea buffer after Bruelheide et al. (2021), EUNIS-ESy.",
+        "name": "Copyrighted, all rights reserved (coverage outline, BfN/Bohn); sea regions CC-BY-4.0 (EEA)",
+        "url": "https://www.bfn.de"
+      },
+      "query_time_ms": 0,
+      "source_id": "coast-eea-2022",
+      "source_name": "coast-eea-2022"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 20272,
+          "layer": "ecoregions",
+          "properties": {
+            "BIOME_NAME": "Temperate Broadleaf & Mixed Forests",
+            "BIOME_NUM": 4,
+            "COLOR": "#67BA48",
+            "COLOR_BIO": "#00734C",
+            "COLOR_NNH": "#F9A91B",
+            "ECO_BIOME_": "PA04",
+            "ECO_ID": 664,
+            "ECO_NAME": "European Atlantic mixed forests",
+            "NNH": 3,
+            "NNH_NAME": "Nature Could Recover",
+            "REALM": "Palearctic",
+            "orig_id": 52
+          }
+        }
+      ],
+      "license": {
+        "attribution": "RESOLVE Ecoregions 2017 (Dinerstein et al. 2017)",
+        "name": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "query_time_ms": 0,
+      "source_id": "ecoregions-2017",
+      "source_name": "ecoregions-2017"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "dominant-habitat",
+          "properties": {
+            "color": "#a7a7a7",
+            "eunis_code": "URBAN",
+            "formation": "URBAN",
+            "label": "URBAN",
+            "level": 0,
+            "name": "URBAN"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Si-moussi, S., Hennekens, S., Mücher, S., De Keersmaecker, W., Chytrý, M., Agrillo, E., Attorre, F., Biurrun, I., Bonari, G., Čarni, A., Ćušterevska, R., Dziuba, T., Ecker, K.T., Güler, B., Jandt, U., Jiménez-Alfaro, B., Lenoir, J., Svenning, J.-C., Swacha, G., Thuiller, W. (2025): EUNIS Habitat Maps: Enhancing Thematic and Spatial Resolution for Europe through Machine Learning. Zenodo. https://doi.org/10.5281/zenodo.16985100",
+        "name": "CC-BY-4.0",
+        "url": "https://doi.org/10.5281/zenodo.16985100"
+      },
+      "query_time_ms": 1,
+      "source_id": "eunis-habitats-l3-2024",
+      "source_name": "EUNIS habitat map — most likely habitat at level 3, Europe 100 m (Si-moussi et al. 2025)"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 9476,
+          "layer": "vegetation",
+          "properties": {
+            "AREA": 16010499,
+            "CODE_D": "F77",
+            "CODE_E": "F77",
+            "COLOR_ID": 43,
+            "EBENE": "K",
+            "FORMATION": "F",
+            "ID": 9476,
+            "OVERVIEW": "F.5.1.1",
+            "PERIMETER": 21063.234,
+            "RGB": 10092441,
+            "SFELD": "F5.1.1.0.030",
+            "SHADE": 0,
+            "UEBERSICHT": "F.5.1.1",
+            "VEGT_EEA_": 9763,
+            "VEGT_EEA_I": 9808,
+            "formation_de": "Mesophytische sommergrüne Laubwälder und Nadel-Laubwälder",
+            "formation_en": "Mesophytic deciduous broad-leaved and mixed coniferous-broad-leaved forests",
+            "level_de": "Planar(-kolline) Ausbildungen ohne Luzula luzuloides",
+            "level_en": "Lowland(-colline) types without Luzula luzuloides",
+            "name_de": "(Atlantisch-)subatlantische Deschampsia flexuosa-(Eichen-)Buchenwälder (Fagus sylvatica, Quercus robur, Q. petraea) mit Lonicera periclymenum, Maianthemum bifolium, Vaccinium myrtillus, z. T. Ilex aquifolium",
+            "name_en": "(Atlantic-)subatlantic Deschampsia flexuosa-(oak-)beech forests (Fagus sylvatica, Quercus robur, Q. petraea) with Lonicera periclymenum, Maianthemum bifolium, Vaccinium myrtillus, partly Ilex aquifolium",
+            "name_source": "sfeld",
+            "pdf_page": 278,
+            "unit": "F77"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "© Bundesamt für Naturschutz (BfN). Bohn, U., Neuhäusl, R., unter Mitarbeit von Gollub, G., Hettwer, C., Neuhäuslová, Z., Raus, Th., Schlüter, H. & Weber, H. (2000/2003): Karte der natürlichen Vegetation Europas / Map of the Natural Vegetation of Europe. Maßstab 1:2 500 000. Münster (Landwirtschaftsverlag).",
+        "name": "Urheberrechtlich geschützt – alle Rechte vorbehalten",
+        "url": "https://www.bfn.de"
+      },
+      "query_time_ms": 1,
+      "source_id": "eurovegmap-2003",
+      "source_name": "eurovegmap-2003"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 15,
+          "layer": "classification",
+          "properties": {
+            "code": "Cfb",
+            "color": "#64FF50",
+            "description": "Temperate, no dry season, warm summer",
+            "group": "Temperate"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Beck et al. (2018), Scientific Data 5:180214",
+        "name": "CC-BY-4.0",
+        "url": "https://www.gloh2o.org/koppen/"
+      },
+      "query_time_ms": 2,
+      "source_id": "koeppen-geiger-1980-2016",
+      "source_name": "Köppen-Geiger climate classification 1980–2016 (Beck et al. 2018, V1)"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "timezones",
+          "properties": {
+            "orig_id": 318,
+            "rowid": 69137,
+            "tzid": "Europe/Berlin"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Timezone boundaries © timezone-boundary-builder contributors, derived from OpenStreetMap data © OpenStreetMap contributors, licensed under ODbL 1.0.",
+        "name": "ODbL-1.0",
+        "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+      },
+      "query_time_ms": 0,
+      "source_id": "timezones-2026a",
+      "source_name": "timezones-2026a"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "biogeo_regions",
+          "properties": {
+            "code": "Atlantic",
+            "name": "Atlantic Bio-geographical Region",
+            "orig_id": 4,
+            "pre_2012": "ATL",
+            "rowid": 9353,
+            "short_name": "atlantic"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "European Environment Agency (EEA) — EEA Biogeographical Regions, Europe 2016 (ver. 1)",
+        "name": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "query_time_ms": 1,
+      "source_id": "biogeo-regions-europe-2016",
+      "source_name": "biogeo-regions-europe-2016"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 0,
+          "layer": "sheets",
+          "properties": {
+            "blattname": "Westerland (Insel Sylt)",
+            "dtknummer": "1015",
+            "id": "1015",
+            "pk_uid": 2
+          }
+        }
+      ],
+      "license": {
+        "attribution": "© GeoBasis-DE / BKG 2025 dl-de/by-2-0",
+        "name": "dl-de/by-2.0",
+        "url": "https://www.govdata.de/dl-de/by-2-0"
+      },
+      "query_time_ms": 0,
+      "source_id": "tk25-blattschnitt-de",
+      "source_name": "tk25-blattschnitt-de"
+    },
+    {
+      "feature_count": 4,
+      "features": [
+        {
+          "id": 1576,
+          "layer": "forstl_grosslandschaften_2011",
+          "properties": {
+            "gl_name": "Norddeutsches Tiefland"
+          }
+        },
+        {
+          "id": 172,
+          "layer": "bgr_buek200",
+          "properties": {
+            "BGL": "1.1",
+            "Legende": "03 SS-BB: p-s//g-l; YE: oj-s/p-s//g-l; oj-s/p-s; BB-PP: a-s,p-s//g-l; a-s,p-s",
+            "NRKART": 3,
+            "Shape_Area": 24618849.0388,
+            "Shape_Leng": 77498.4553855,
+            "Symbol": "3",
+            "TKLE_NR": 151803
+          }
+        },
+        {
+          "id": 138,
+          "layer": "wuchsbezirke_2020",
+          "properties": {
+            "bez_wb_bu": "Westküsten-Marschen u. Inseln",
+            "bez_wg_bu": "Schleswig-Holstein Nordwest",
+            "wb_bu": 1,
+            "wg_bu": 1
+          }
+        },
+        {
+          "id": 44036,
+          "layer": "bgr_guek250",
+          "properties": {
+            "Shape_STAr": 11302703.8918,
+            "Shape_STLe": 30558.3452511,
+            "einheit_id": 887,
+            "gen_id": 18,
+            "pet_id": 335,
+            "strat_id": 8
+          }
+        }
+      ],
+      "license": {
+        "attribution": "© Thünen-Institut für Waldökosysteme",
+        "name": "GeoNutzV",
+        "url": "https://sg.geodatenzentrum.de/web_public/gdz/lizenz/geonutzv.pdf"
+      },
+      "query_time_ms": 20,
+      "source_id": "waldoekologische-naturraeume",
+      "source_name": "waldoekologische-naturraeume"
+    },
+    {
+      "feature_count": 1,
+      "features": [
+        {
+          "id": 116,
+          "layer": "botanical_countries",
+          "properties": {
+            "LEVEL1_COD": 1,
+            "LEVEL1_NAM": "EUROPE",
+            "LEVEL2_COD": 11,
+            "LEVEL2_NAM": "Middle Europe",
+            "LEVEL3_COD": "GER",
+            "LEVEL3_NAM": "Germany"
+          }
+        }
+      ],
+      "license": {
+        "attribution": "Geometry © Natural Earth (public domain). Area coding: World Geographical Scheme for Recording Plant Distributions (WGSRPD), ed. 2 (Brummitt 2001), TDWG / Royal Botanic Gardens, Kew.",
+        "name": "Public Domain (geometry: Natural Earth)",
+        "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+      },
+      "query_time_ms": 7,
+      "source_id": "wgsrpd-level3",
+      "source_name": "wgsrpd-level3"
+    }
+  ],
+  "total_features": 15,
+  "wgs84": {
+    "lat": 54.9,
+    "lon": 8.31
+  }
+}
