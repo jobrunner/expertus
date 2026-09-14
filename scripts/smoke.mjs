@@ -14,9 +14,13 @@ const ORTUS = process.env.ORTUS_BASE_URL ?? 'https://ortus.fieldworksdiary.org'
 const HOSTUS = process.env.HOSTUS_BASE_URL ?? 'https://hostus.fieldworksdiary.org'
 const HABITATUS = process.env.HABITATUS_BASE_URL ?? 'https://habitatus.fieldworksdiary.org'
 
+// erwarteBelege: die Belegfelder, an denen die Anzeige hängt. Sie fließen
+// nirgends in die Auswertung ein, stehen aber als Nebentext in der Maske —
+// eine Umbenennung in ortus (etwa des Ökoregion-Namens) bräche sie sonst
+// unbemerkt, weil die sieben Kopfdaten davon unberührt blieben.
 const PUNKTE = [
-  { name: 'Berlin', lat: 52.52, lon: 13.405, erwarteVollstaendig: true },
-  { name: 'Sylt', lat: 54.9, lon: 8.31, erwarteVollstaendig: true },
+  { name: 'Berlin', lat: 52.52, lon: 13.405, erwarteVollstaendig: true, erwarteBelege: ['ecoName', 'elevationSource'] },
+  { name: 'Sylt', lat: 54.9, lon: 8.31, erwarteVollstaendig: true, erwarteBelege: ['seaRegion', 'ecoName', 'elevationSource'] },
   { name: 'Ostsee/Darß', lat: 54.45, lon: 12.45, erwarteVollstaendig: false, erwarteFehlend: ['Ecoreg'] },
 ]
 
@@ -31,8 +35,12 @@ let kopf = null
 
 for (const p of PUNKTE) {
   try {
-    const { header, origin } = await ortus.lookup({ lat: p.lat, lon: p.lon })
+    const { header, origin, evidence } = await ortus.lookup({ lat: p.lat, lon: p.lon })
     const fehlend = missingFields(origin)
+    for (const beleg of p.erwarteBelege ?? []) {
+      const wert = evidence?.[beleg]
+      melde(Boolean(wert), `ortus ${p.name}: Beleg ${beleg} belegt (${wert || 'leer'})`)
+    }
     if (p.erwarteVollstaendig) {
       melde(fehlend.length === 0, `ortus ${p.name}: alle ${HEADER_FIELDS.length} Kopfdaten (fehlend: ${fehlend.join(', ') || 'keine'})`)
       kopf ??= header
@@ -49,8 +57,9 @@ try {
   const treffer = await createHostus({ baseUrl: HOSTUS }).suggest('Festuca ovina', { limit: 20 })
   melde(treffer.length > 0, `hostus: ${treffer.length} Vorschläge, davon ${treffer.filter((t) => t.isEuroSl).length} aus EuroSL`)
   if (treffer.length && treffer.every((t) => !t.isEuroSl)) {
-    // Kein Fehler, aber die Annahme hinter der Vorzugsregel: siehe Plan,
-    // Abschnitt "Annahmen".
+    // Kein Fehler, sondern die Annahme hinter der Vorzugsregel: hostus
+    // stellt EuroSL-Treffer nach vorn, garantiert sie aber nicht. Ein
+    // harter Filter auf EuroSL würde die Liste hier leeren.
     console.log('  Hinweis: kein EuroSL-Treffer — die Vorzugsregel greift, ein Filter würde die Liste leeren.')
   }
 } catch (err) {

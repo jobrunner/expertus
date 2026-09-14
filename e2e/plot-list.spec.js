@@ -18,6 +18,13 @@ test('ein neuer Plot führt direkt in die Maske', async ({ page }) => {
   await expect(page).toHaveURL(/#\/plot\/P-\d{4}-\d{2}-\d{2}-1$/)
 })
 
+test('die Liste zeigt zu jedem Plot das Datum', async ({ page }) => {
+  await seed(page, [{ sampleId: 'Sylt-03', result: 'R1A', status: 'ok', species: ['Ammophila arenaria'] }])
+  await page.goto('/#/plots')
+  await expect(page.getByRole('row', { name: /Sylt-03/ })).toContainText('14.09.2026')
+  await expect(page.getByRole('columnheader', { name: 'Datum' })).toBeVisible()
+})
+
 test('gespeicherte Plots stehen mit Ergebnis und Status in der Tabelle', async ({ page }) => {
   await seed(page, [
     { sampleId: 'Sylt-03', result: 'R1A', status: 'ok', species: ['Ammophila arenaria'] },
@@ -95,6 +102,10 @@ test('beim Routenwechsel meldet sich die verlassene Liste vom Store ab', async (
     }
   })
   await page.goto('/#/plots')
+  // Der Start der Anwendung ist asynchron (config.json, Router). Ohne
+  // dieses Warten fielen seine eigenen Indexlesevorgänge in die Zählung
+  // der ersten Runde und machten sie zufällig zu hoch.
+  await expect(page.getByRole('button', { name: 'Neuen Plot anlegen' })).toBeVisible()
 
   async function neuerPlotUndZurueck() {
     await page.evaluate(() => { window.__indexReads = 0 })

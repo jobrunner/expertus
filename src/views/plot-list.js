@@ -1,6 +1,6 @@
 // Liste und Suche. Speist sich aus dem Index, nicht aus den Plots selbst.
 import { el, clear } from '../dom.js'
-import { formatCoord, resultLabel, statusLabel } from '../format.js'
+import { formatCoord, formatDate, resultLabel, statusLabel } from '../format.js'
 import { hashFor } from '../router.js'
 
 const STATUS_OPTIONEN = [
@@ -40,10 +40,11 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
     if (!storage.list().length) return el('p', { text: 'Noch kein Plot erfasst.' })
     if (!treffer.length) return el('p', { text: 'Kein Plot passt zur Suche.' })
     return el('table', {}, [
-      el('thead', {}, el('tr', {}, ['Sample-ID', 'Koordinate', 'Arten', 'Ergebnis', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
+      el('thead', {}, el('tr', {}, ['Sample-ID', 'Datum', 'Koordinate', 'Arten', 'Ergebnis', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
       el('tbody', {}, treffer.map((e) =>
         el('tr', {}, [
           el('td', {}, el('a', { href: hashFor({ name: 'plot', sampleId: e.sampleId }), text: e.sampleId })),
+          el('td', { text: formatDate(e.updatedAt) }),
           el('td', { text: `${formatCoord(e.lat)} / ${formatCoord(e.lon)}` }),
           el('td', { text: String(e.speciesCount) }),
           el('td', { text: resultLabel(e.result) }),

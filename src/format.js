@@ -13,6 +13,14 @@ export function resultLabel(result) {
 export const statusLabel = (status) => STATUS[status] ?? status
 export const originLabel = (origin) => ORIGIN[origin] ?? origin
 
+// Kein toLocaleDateString: dessen Ausgabe hängt von der Umgebung ab, und
+// die Liste soll überall gleich aussehen. Der Index hält einen ISO-Stempel;
+// gezeigt wird der Tag, die Uhrzeit trägt in der Übersicht nichts bei.
+export function formatDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ''))
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : '—'
+}
+
 export function formatCoord(n) {
   return typeof n === 'number' && Number.isFinite(n) ? n.toFixed(6) : '—'
 }
