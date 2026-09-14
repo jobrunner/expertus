@@ -8,10 +8,12 @@ import { createOrtus } from './adapters/ortus.js'
 import { createHostus } from './adapters/hostus.js'
 import { createHabitatus } from './adapters/habitatus.js'
 import { createActions } from './actions.js'
-import { clear, el } from './dom.js'
+import { clear, announce } from './dom.js'
+import { resultLabel } from './format.js'
 import { renderPlotList } from './views/plot-list.js'
 import { renderPlotForm } from './views/plot-form.js'
 import { renderSpeciesSection } from './views/species-section.js'
+import { renderResultSection } from './views/result.js'
 
 const mount = document.getElementById('ansicht')
 const live = document.getElementById('meldungen')
@@ -43,17 +45,11 @@ try {
       if (route.name === 'list') cleanupView = renderPlotList({ mount, store, storage, actions, router })
       if (route.name === 'plot') {
         actions.openPlot(route.sampleId)
-        // „Auswertung" (Task 17) ist hier noch nur ein Platzhalter mit
-        // Überschrift, damit die Maske schon vier Abschnitte zeigt.
         cleanupView = renderPlotForm({
           mount, store, actions, router,
           sections: [
             (plot) => renderSpeciesSection({ plot, actions, hostus }),
-            () => el('section', { 'aria-labelledby': 'h-ausw' }, [
-              el('h3', { id: 'h-ausw', text: 'Auswertung' }),
-              el('button', { type: 'button', text: 'Auswerten', disabled: true }),
-              el('p', { class: 'muted', text: actions.blockingReason() ?? '' }),
-            ]),
+            (plot) => renderResultSection({ plot, actions, store }),
           ],
         })
       }
@@ -61,11 +57,23 @@ try {
   })
 
   store.set({ index: storage.list() })
-  // Fehler werden nicht mehr hier global angesagt: jede Ansicht zeigt sie
-  // selbst, sichtbar und mit role="alert" (siehe plot-form.js) — der
-  // globale Live-Bereich hätte dieselbe Meldung sonst ein zweites Mal
-  // angesagt. Ab Task 17 sagt diese Stelle stattdessen Auswertungsergebnisse
-  // an; #meldungen (live) bleibt dafür bestehen.
+  // Fehler werden nicht hier angesagt: jede Ansicht zeigt sie selbst,
+  // sichtbar und mit role="alert" (siehe plot-form.js) —
+  // der globale Live-Bereich würde dieselbe Meldung sonst ein zweites Mal
+  // ansagen (Entscheidung aus Task 15). Angesagt wird hier ausschließlich
+  // das Auswertungsergebnis: es steht nirgends sonst mit role="alert" oder
+  // -status, wäre also ohne diese Stelle für Screenreader stumm.
+  let letzteAnsage = null
+  store.subscribe((state) => {
+    const ev = state.plot?.evaluation
+    if (ev?.status !== 'ok') return
+    // Ohne diese Wächterbedingung würde jede unverwandte Zustandsänderung
+    // (z. B. das Ein-/Ausblenden von "Kopfdaten werden geholt …") dieselbe
+    // Meldung erneut vorlesen, solange keine neue Auswertung stattfand.
+    if (ev === letzteAnsage) return
+    letzteAnsage = ev
+    announce(live, `Ergebnis: ${resultLabel(ev.response.result)}`)
+  })
   router.start()
 } catch (err) {
   mount.append(Object.assign(document.createElement('p'), { className: 'warn', textContent: err.message }))
