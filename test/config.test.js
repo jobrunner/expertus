@@ -30,3 +30,10 @@ test('eine fehlende Basis-URL ist ein Startfehler, kein stiller Default', async 
 test('ein unerreichbares config.json ist ein Startfehler', async () => {
   await assert.rejects(() => loadConfig({ fetch: createFakeFetch({ status: 404, text: 'not found' }) }), /config\.json/)
 })
+
+test('kaputtes JSON in config.json wird verständlich gemeldet', async () => {
+  await assert.rejects(
+    () => loadConfig({ fetch: createFakeFetch({ status: 200, text: '{kaputt' }) }),
+    /config\.json/,
+  )
+})
