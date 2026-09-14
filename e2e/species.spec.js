@@ -37,6 +37,9 @@ test('EuroSL steht oben, der Rest ist als solcher markiert', async ({ page }) =>
 test('Pfeiltasten wandern und setzen aria-activedescendant', async ({ page }) => {
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca')
+  // Wie ein Mensch es tut: die Pfeiltaste kommt, wenn Vorschläge dastehen,
+  // nicht während der Entprellung noch läuft.
+  await expect(page.getByRole('listbox').getByRole('option').first()).toBeVisible()
   await input.press('ArrowDown')
   await expect(input).toHaveAttribute('aria-activedescendant', 'legulus-option-0')
   // Siehe Kommentar oben: nur die Vorschlagsliste, nicht die
@@ -49,6 +52,9 @@ test('Pfeiltasten wandern und setzen aria-activedescendant', async ({ page }) =>
 test('Enter übernimmt die markierte Art in die Liste', async ({ page }) => {
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca')
+  // Wie ein Mensch es tut: die Pfeiltaste kommt, wenn Vorschläge dastehen,
+  // nicht während der Entprellung noch läuft.
+  await expect(page.getByRole('listbox').getByRole('option').first()).toBeVisible()
   await input.press('ArrowDown')
   await input.press('Enter')
   await expect(page.getByRole('row', { name: /Festuca ovina/ })).toBeVisible()

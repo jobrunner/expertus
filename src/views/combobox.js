@@ -4,7 +4,7 @@
 import { createComboboxState, OPTION_ID_PREFIX } from '../combobox-state.js'
 import { el, clear } from '../dom.js'
 
-export function mountCombobox({ input, listbox, hostus, onPick, onError, debounceMs = 0 }) {
+export function mountCombobox({ input, listbox, hostus, onPick, onError, debounceMs = 200 }) {
   const state = createComboboxState()
   let timer = null
   let laufend = null
@@ -47,13 +47,13 @@ export function mountCombobox({ input, listbox, hostus, onPick, onError, debounc
     paint()
   }
 
-  // debounceMs=0 statt einer spürbaren Verzögerung: der überholte Aufruf
-  // wird ohnehin per AbortController abgebrochen, sobald der nächste
-  // Anschlag kommt — eine zusätzliche Wartezeit brächte also keine
-  // Ersparnis, würde aber Pfeiltasten und Enter kurz nach dem Tippen
-  // regelmäßig ins Leere laufen lassen, weil die Vorschläge dann noch
-  // nicht da sind. setTimeout(…, 0) reicht, um den Aufruf aus dem
-  // synchronen Tastaturereignis herauszulösen.
+  // Die Entprellung ist hier nicht verhandelbar: ohne sie löst jeder
+  // einzelne Tastenanschlag sofort eine eigene Netzanfrage aus — bei
+  // "Festuca ovina" wären das dreizehn statt ein bis zwei. Der
+  // AbortController verhindert nur, dass eine überholte ANTWORT noch
+  // verarbeitet wird; er verhindert nicht, dass die ANFRAGE überhaupt
+  // gestellt wird. Die Anwendung läuft im Gelände über Mobilfunk — dort
+  // zählen Datenvolumen, Akku und Wartezeit.
   input.addEventListener('input', () => {
     state.setQuery(input.value)
     clearTimeout(timer)
