@@ -1,7 +1,7 @@
 .PHONY: test check serve docker a11y smoke
 
 test:
-	node --test test/
+	node --test $$(find test -name '*.test.js' | sort)
 
 check: test a11y
 

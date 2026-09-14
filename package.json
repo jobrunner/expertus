@@ -5,6 +5,6 @@
   "type": "module",
   "description": "EUNIS-Habitatbestimmung im Feld",
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test $(find test -name '*.test.js' | sort)"
   }
 }
