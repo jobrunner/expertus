@@ -121,9 +121,8 @@ test('ein eingefügtes Koordinatenpaar verteilt sich auf beide Felder', async ({
 })
 
 // Der Nachweis, dass die Artenliste während des Kopfdaten-Abrufs bedienbar
-// bleibt, hängt am Suchfeld für Arten — das baut erst Task 16. Bis dahin
-// ausgesetzt; Task 16 schaltet ihn wieder scharf.
-test.fixme('die Artenliste bleibt bedienbar, während die Kopfdaten laden', async ({ page }) => {
+// bleibt, hängt am Suchfeld für Arten (Task 16).
+test('die Artenliste bleibt bedienbar, während die Kopfdaten laden', async ({ page }) => {
   let freigeben
   await page.route('https://ortus.test/api/v1/query*', async (route) => {
     await new Promise((res) => (freigeben = res))
