@@ -1,0 +1,67 @@
+:root {
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #595959;        /* 7:1 auf Weiß */
+  --warn: #8a3b00;         /* 5.9:1 auf Weiß */
+  --line: #767676;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 1rem/1.5 system-ui, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+main { padding: 1rem; max-width: 48rem; margin: 0 auto; }
+
+/* Sichtbarer Fokus ist Pflicht; der Browser-Default verschwindet auf
+   farbigen Flächen. */
+:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: 2px;
+}
+
+/* Mindestens 24x24 CSS-Pixel Zielfläche (WCAG 2.2 SC 2.5.8); 44 wo möglich. */
+button, .option, input, select {
+  min-height: 2.75rem;
+  font: inherit;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+  background: var(--bg);
+  padding: 0.5rem;
+  z-index: 1;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.muted { color: var(--muted); }
+.warn  { color: var(--warn); font-weight: 600; }
+
+.listbox { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); }
+.option[aria-selected='true'] { background: #e8f0fe; }
+
+/* Kein Text in Bildern, keine festen Höhen: bei 200 % Zoom darf nichts
+   abgeschnitten werden. */
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.4rem; border-bottom: 1px solid var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
