@@ -38,6 +38,12 @@ try {
   const router = createRouter({
     window,
     onRoute(route) {
+      // Nur ein echter Wechsel verwaist ein fokussiertes Element der
+      // vorigen Ansicht. Beim allerersten Aufruf (Seitenaufbau) gibt es
+      // weder eine Vorgänger-Ansicht noch besteht die Race-Gefahr unten —
+      // die Zurücksetzung hier würde dort nur unnötig mit dem allerersten
+      // Tab-Druck der Nutzerin um den Fokus konkurrieren.
+      const wechsel = cleanupView !== null
       cleanupView?.()
       cleanupView = null
       store.set({ route })
@@ -52,6 +58,18 @@ try {
             (plot) => renderResultSection({ plot, actions, store }),
           ],
         })
+      }
+      if (wechsel) {
+        // clear() entfernt das gerade fokussierte Element der alten
+        // Ansicht; der Browser springt daraufhin zwar auf document.body,
+        // merkt sich aber intern noch dessen Baumposition — ein Tab landete
+        // sonst mitten in der neuen Ansicht und würde Kopfzeile samt
+        // Navigation überspringen. Der explizite Fokus setzt auch diesen
+        // internen Ausgangspunkt zurück, sodass Tab wieder beim Sprunglink
+        // beginnt.
+        document.body.setAttribute('tabindex', '-1')
+        document.body.focus()
+        document.body.removeAttribute('tabindex')
       }
     },
   })

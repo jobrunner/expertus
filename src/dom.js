@@ -35,9 +35,23 @@ export function announce(liveRegion, text) {
 // nur noch für ein einziges Zeichen nutzbar. Vor dem Aufbau werden Kennung
 // und — bei einem Textfeld — die Position der Schreibmarke gemerkt, danach
 // beides wiederhergestellt. Wird auch von der Artentabelle gebraucht.
+//
+// Ein Neuaufbau kann auch durch ein völlig unbeteiligtes Ereignis ausgelöst
+// werden — die Kopfdaten aus ortus treffen nebenläufig ein, während die
+// Nutzerin längst in der Art-Suche tippt. Die Art-Suche kennt keinen
+// eigenen Platz im Store (ihr Text ist reine Bedienung, kein Plot-Datum);
+// ohne diesen Ausgleich würde ein solcher Neuaufbau den gerade eingegebenen,
+// noch nicht abgeschickten Text kommentarlos verwerfen. Der Wert des
+// fokussierten Felds wird deshalb — wie schon der Fokus selbst — mit
+// hinübergenommen, sofern der frische Aufbau dort selbst nichts einträgt.
+// Wer ein Feld absichtlich leert (siehe combobox.js, uebernehmen()), tut
+// das deshalb VOR der auslösenden Aktion, nicht danach: sonst würde genau
+// dieser Ausgleich den gelöschten Text hier wiederherstellen.
 export function preserveFocus(container, render) {
   const active = container.contains(document.activeElement) ? document.activeElement : null
   const id = active?.id || null
+  const hasValue = active && 'value' in active
+  const value = hasValue ? active.value : null
   const hasSelection = active && typeof active.selectionStart === 'number'
   const selectionStart = hasSelection ? active.selectionStart : null
   const selectionEnd = hasSelection ? active.selectionEnd : null
@@ -54,6 +68,11 @@ export function preserveFocus(container, render) {
   // erst, wenn die aktuelle Ereignisverarbeitung fertig ist.
   queueMicrotask(() => {
     restored.focus()
+    // Nur übernehmen, wenn der frische Aufbau das Feld leer gelassen hat:
+    // ein aus dem Store gespeistes Feld (Breite, Country, …) trägt nach dem
+    // Neuaufbau bereits seinen aktuellen, gültigen Wert — der wird nicht
+    // überschrieben.
+    if (hasValue && restored.value === '' && value !== '') restored.value = value
     if (selectionStart !== null && typeof restored.setSelectionRange === 'function') {
       try {
         restored.setSelectionRange(selectionStart, selectionEnd)

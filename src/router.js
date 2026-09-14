@@ -19,7 +19,20 @@ export function hashFor(route) {
 }
 
 export function createRouter({ window, onRoute }) {
-  const handle = () => onRoute(parseRoute(window.location.hash))
+  // Ein Klick ruft go() auf und erwartet die neue Ansicht sofort — das
+  // hashchange-Ereignis feuert aber asynchron (ein eigener Task). Bis dahin
+  // bliebe die alte Ansicht noch erreichbar, mitsamt ihrer fokussierbaren
+  // Elemente: ein sofortiger zweiter Tab-Druck landet dann in der falschen
+  // Ansicht (siehe e2e/a11y.spec.js, „Fokusreihenfolge“). process() wird
+  // deshalb synchron aus go() aufgerufen; currentHash verhindert, dass das
+  // nachträgliche hashchange-Ereignis dieselbe Route ein zweites Mal meldet.
+  let currentHash = null
+  function process(hash) {
+    if (hash === currentHash) return
+    currentHash = hash
+    onRoute(parseRoute(hash))
+  }
+  const handle = () => process(window.location.hash)
   return {
     start() {
       window.addEventListener('hashchange', handle)
@@ -29,7 +42,9 @@ export function createRouter({ window, onRoute }) {
       window.removeEventListener('hashchange', handle)
     },
     go(route) {
-      window.location.hash = hashFor(route)
+      const hash = hashFor(route)
+      window.location.hash = hash
+      process(hash)
     },
   }
 }

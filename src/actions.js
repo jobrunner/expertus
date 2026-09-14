@@ -13,13 +13,20 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
   // Index auffrischen. Verteilt man das auf die einzelnen Aktionen, wird
   // irgendwann eine vergessen, und dann steht ein Ergebnis neben einer
   // Artenliste, die es nicht erzeugt hat.
-  function update(mutate, { dirty = true } = {}) {
+  // `extra` fährt weitere Store-Felder im selben store.set() mit (z. B.
+  // headerPending: false). Zwei store.set() direkt hintereinander lösen
+  // zwei Neuaufbauten des Einhängepunkts aus, bevor preserveFocus den
+  // ersten überhaupt wiederherstellen konnte — ein Feld, in das die
+  // Nutzerin gerade tippt (etwa die Art-Suche, die keinen eigenen
+  // Store-Platz hat), verlöre dabei seinen Inhalt. Eine Zustandsänderung,
+  // ein Aufbau.
+  function update(mutate, { dirty = true, extra = {} } = {}) {
     const current = plot()
     if (!current) return null
     const next = mutate({ ...current })
     const marked = dirty ? markDirty(next) : next
     const saved = storage.save(marked)
-    store.set({ plot: saved, index: storage.list() })
+    store.set({ plot: saved, index: storage.list(), ...extra })
     return saved
   }
 
@@ -85,8 +92,7 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
             mergedOrigin[field] = origin[field]
           }
           return { ...p, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence }
-        })
-        store.set({ headerPending: false })
+        }, { extra: { headerPending: false } })
       } catch (err) {
         // Ein Abbruch ist kein Fehler, sondern der Normalfall beim
         // Nachtippen einer Koordinate.
@@ -188,9 +194,8 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
         // update() macht es über markDirty() veraltet.
         update(
           (p) => ({ ...p, evaluation: { at: now(), request: response.request, response, status: 'ok' } }),
-          { dirty: false },
+          { dirty: false, extra: { evaluating: false } },
         )
-        store.set({ evaluating: false })
       } catch (err) {
         if (err?.name === 'AbortError') {
           store.set({ evaluating: false })
@@ -204,9 +209,8 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
             ...p,
             evaluation: { at: now(), request: null, response: null, status: 'error', message: err.message },
           }),
-          { dirty: false },
+          { dirty: false, extra: { evaluating: false, error: err } },
         )
-        store.set({ evaluating: false, error: err })
       }
     },
   }

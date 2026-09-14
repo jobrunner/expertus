@@ -40,11 +40,18 @@ export function mountCombobox({ input, listbox, hostus, onPick, onError, debounc
     const gewaehlt = state.pick()
     // Ohne Markierung gilt der Freitext: ESy-Konventionen wie
     // "Quercus species" kennt kein Backbone.
-    onPick(gewaehlt ?? { name: input.value.trim(), conceptId: null, isEuroSl: false, entry: 'manual' })
+    const gewaehlteArt = gewaehlt ?? { name: input.value.trim(), conceptId: null, isEuroSl: false, entry: 'manual' }
+    // Erst leeren, dann erst onPick auslösen: onPick stößt über actions.
+    // addSpecies synchron einen Neuaufbau der Maske an, und preserveFocus
+    // (dom.js) nimmt den zu diesem Zeitpunkt sichtbaren Feldwert mit
+    // hinüber, damit ein unbeteiligter Neuaufbau (siehe dort) nichts
+    // verwirft. Stünde hier noch der übernommene Artname, käme er nach der
+    // Auswahl unerwünscht zurück.
     input.value = ''
     state.setQuery('')
     state.setOptions([])
     paint()
+    onPick(gewaehlteArt)
   }
 
   // Die Entprellung ist hier nicht verhandelbar: ohne sie löst jeder
