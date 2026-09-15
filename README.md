@@ -49,9 +49,9 @@ git tag v0.1.0 && git push origin v0.1.0
 
 ```sh
 docker run -p 8080:8080 \
-  -e ORTUS_BASE_URL=https://ortus.fieldworksdiary.org \
-  -e HABITATUS_BASE_URL=https://habitatus.fieldworksdiary.org \
-  -e HOSTUS_BASE_URL=https://hostus.fieldworksdiary.org \
+  -e ORTUS_BASE_URL=https://ortus.example \
+  -e HABITATUS_BASE_URL=https://habitatus.example \
+  -e HOSTUS_BASE_URL=https://hostus.example \
   ghcr.io/jobrunner/expertus:0.1.0
 ```
 

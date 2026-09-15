@@ -27,7 +27,7 @@ Dienste:
 | **hostus** | Autosuggest für Pflanzennamen | `GET /v1/suggest` |
 | **habitatus** | Plot → EUNIS-Habitat | `POST /api/v1/classify` |
 
-Alle drei laufen unter `*.fieldworksdiary.org` und sind per CORS für die
+Alle drei laufen unter je einer eigenen Subdomain und sind per CORS für die
 Expertus-Origin freigegeben (geprüft an ortus: `access-control-allow-origin`
 spiegelt die Origin, `vary: Origin`).
 
@@ -407,7 +407,7 @@ es keinen Unterschied zwischen dem Geschriebenen und dem Ausgelieferten.
 sonst bräuchte jede Umgebung ein eigenes Image. Die App holt beim Start
 `/config.json`; ein Entrypoint schreibt diese Datei aus `ORTUS_BASE_URL`,
 `HABITATUS_BASE_URL` und `HOSTUS_BASE_URL` (Vorgaben: die drei
-`*.fieldworksdiary.org`). Dieselben Werte erzeugen die `connect-src`-Liste der
+betriebenen Dienste). Dieselben Werte erzeugen die `connect-src`-Liste der
 CSP — sonst blockiert die eigene Richtlinie genau die Dienste, die man gerade
 konfiguriert hat.
 
@@ -471,7 +471,7 @@ Schema-Drift in ortus sichtbar macht, bevor die Nutzer sie merken.
 
 | Punkt | Zustand |
 |---|---|
-| habitatus-Deployment | wird unter `habitatus.fieldworksdiary.org` bereitgestellt; **Preflight prüfen**: `POST` mit `Content-Type: application/json` erfordert eine `OPTIONS`-Antwort mit `Access-Control-Allow-Headers: Content-Type` |
-| hostus-Deployment | wird unter `hostus.fieldworksdiary.org` bereitgestellt; `GET /v1/suggest` war zuletzt ein SP0-Stub — die genaue Antwortform legt den Adapter fest |
+| habitatus-Deployment | wird unter `habitatus.example` bereitgestellt; **Preflight prüfen**: `POST` mit `Content-Type: application/json` erfordert eine `OPTIONS`-Antwort mit `Access-Control-Allow-Headers: Content-Type` |
+| hostus-Deployment | wird unter `hostus.example` bereitgestellt; `GET /v1/suggest` war zuletzt ein SP0-Stub — die genaue Antwortform legt den Adapter fest |
 | Regel-Trace | spätere habitatus-Erweiterung; die UI-Fläche im Anhang (§6.3) ist dafür vorgesehen |
 | Export, Sync, Offline | ausdrücklich spätere Ausbaustufen |
