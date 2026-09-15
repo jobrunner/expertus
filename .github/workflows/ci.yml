@@ -8,9 +8,36 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # Das Skill-Submodul liegt in einem PRIVATEN Repository. Der voreingestellte
+      # GITHUB_TOKEN gilt nur für dieses hier, weshalb checkout das Submodul mit
+      # "not found" abbrach — GitHub meldet fehlenden Zugriff als 404, nicht als
+      # 403. Die SSH-URL aus .gitmodules hilft nicht: der Runner hat keinen
+      # Schlüssel, checkout bildet SSH ohnehin auf HTTPS mit Token ab.
+      #
+      # Deshalb ein Installations-Token der Release-App, ausdrücklich für BEIDE
+      # Repositories — ein App-Token ist sonst auf dieses eine beschränkt und
+      # der Klon scheitert weiter. Mehr als Contents: read braucht der Klon
+      # nicht.
+      #
+      # Ein Lauf ohne Zugriff auf die Secrets (Pull Request aus einem Fork)
+      # bekommt kein Token und scheitert hier; für dieses Repository gibt es
+      # diesen Fall nicht.
+      - name: Installations-Token der App erzeugen
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            expertus
+            claude-skills
+          permission-contents: read
+
       - uses: actions/checkout@v4
         with:
           submodules: true   # der A11y-Skill hängt als Submodul darin
+          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -25,9 +52,36 @@ jobs:
   browser:
     runs-on: ubuntu-latest
     steps:
+      # Das Skill-Submodul liegt in einem PRIVATEN Repository. Der voreingestellte
+      # GITHUB_TOKEN gilt nur für dieses hier, weshalb checkout das Submodul mit
+      # "not found" abbrach — GitHub meldet fehlenden Zugriff als 404, nicht als
+      # 403. Die SSH-URL aus .gitmodules hilft nicht: der Runner hat keinen
+      # Schlüssel, checkout bildet SSH ohnehin auf HTTPS mit Token ab.
+      #
+      # Deshalb ein Installations-Token der Release-App, ausdrücklich für BEIDE
+      # Repositories — ein App-Token ist sonst auf dieses eine beschränkt und
+      # der Klon scheitert weiter. Mehr als Contents: read braucht der Klon
+      # nicht.
+      #
+      # Ein Lauf ohne Zugriff auf die Secrets (Pull Request aus einem Fork)
+      # bekommt kein Token und scheitert hier; für dieses Repository gibt es
+      # diesen Fall nicht.
+      - name: Installations-Token der App erzeugen
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            expertus
+            claude-skills
+          permission-contents: read
+
       - uses: actions/checkout@v4
         with:
           submodules: true
+          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
