@@ -37,3 +37,37 @@ jobs:
       # Dienste — deshalb sind sie hier zulässig. Über make e2e statt
       # direkt npx: dasselbe Ziel wie lokal, eine Definition.
       - run: make e2e
+
+  # Das Image bei jedem Push prüfen, nicht erst beim Release: geprüft wird mit
+  # demselben Ziel wie lokal (make docker-test → e2e/container.sh), damit es
+  # nur eine Definition der Containerprüfung gibt. Ein Image, das baut, aber
+  # nicht antwortet, ist kein grüner Build.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make docker-test
+
+  docker-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: error
+
+  # actionlint findet Fehler in den Workflows und Script-Injection über
+  # unvertraute github.event-Felder.
+  actions-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # -shellcheck erwartet den PFAD ZUR AUSFÜHRBAREN DATEI, keine
+      # shellcheck-Optionen: steht dort etwas anderes, überspringt actionlint
+      # shellcheck stillschweigend und der Job meldet Erfolg, obwohl er nur
+      # die Hälfte geprüft hat.
+      - run: |
+          curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash \
+            | bash -s -- 1.7.7
+          ./actionlint -color -shellcheck=shellcheck

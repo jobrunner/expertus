@@ -36,6 +36,34 @@ make check    # Pre-Merge-Gate: test + a11y
 Die Basis-URLs stehen nicht im Quelltext, sondern in `/config.json`; im
 Container erzeugt der Entrypoint sie aus Umgebungsvariablen.
 
+## Auslieferung
+
+Veröffentlicht wird aus Git-Tags: ein `v*`-Tag baut das Image für amd64 und
+arm64, prüft es mit `make docker-test`, führt beide zu einem Multi-Arch-Index
+zusammen, signiert ihn schlüssellos mit cosign und bezeugt Provenance und
+SBOM gegen dessen Digest (`.github/workflows/docker-release.yml`).
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+```sh
+docker run -p 8080:8080 \
+  -e ORTUS_BASE_URL=https://ortus.fieldworksdiary.org \
+  -e HABITATUS_BASE_URL=https://habitatus.fieldworksdiary.org \
+  -e HOSTUS_BASE_URL=https://hostus.fieldworksdiary.org \
+  ghcr.io/jobrunner/expertus:0.1.0
+```
+
+Signatur und Bezeugungen prüfen:
+
+```sh
+cosign verify ghcr.io/jobrunner/expertus:0.1.0 \
+  --certificate-identity-regexp 'https://github.com/jobrunner/expertus/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/jobrunner/expertus:0.1.0 -R jobrunner/expertus
+```
+
 ## Dokumente
 
 - Design: `docs/superpowers/specs/2026-09-13-expertus-design.md`
