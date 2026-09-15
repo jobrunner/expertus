@@ -1,6 +1,6 @@
 # Expertus
 
-Frontend zur Bestimmung von EUNIS-Habitaten im Feld. Erfasst einen Plot
+PoC-Frontend (Vorstudie) zur Bestimmung von EUNIS-Habitaten im Feld. Erfasst einen Plot
 (Koordinate, Sample-ID, Artenliste mit Deckung), holt die Standort-Kopfdaten
 aus ortus, lässt ihn von habitatus klassifizieren und speichert ihn lokal.
 
