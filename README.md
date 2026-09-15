@@ -16,22 +16,22 @@ make serve    # lokaler Statik-Server auf :5173
 make check    # Pre-Merge-Gate: test + a11y
 ```
 
-| Befehl | Wirkung |
-|---|---|
-| `make test` | Unit-Suite (`node:test`), kein Netz, kein Browser |
-| `make e2e` | Oberflächentests im Browser gegen Stubs |
-| `make a11y` | WCAG-2.2-AA-Gate: Grep, axe über die schwierigen Zustände |
-| `make check` | Pre-Merge-Gate: `test` + `a11y` |
-| `make smoke` | Abgleich gegen die **echten** Dienste; nicht in der CI |
-| `make docker` / `make docker-test` | Image bauen, starten, prüfen |
+| Befehl                                 | Wirkung                                                     |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `make test`                          | Unit-Suite (`node:test`), kein Netz, kein Browser         |
+| `make e2e`                           | Oberflächentests im Browser gegen Stubs                    |
+| `make a11y`                          | WCAG-2.2-AA-Gate: Grep, axe über die schwierigen Zustände |
+| `make check`                         | Pre-Merge-Gate: `test` + `a11y`                          |
+| `make smoke`                         | Abgleich gegen die **echten** Dienste; nicht in der CI |
+| `make docker` / `make docker-test` | Image bauen, starten, prüfen                               |
 
 ## Dienste
 
-| Dienst | Rolle | Vorgabe |
-|---|---|---|
-| ortus | Koordinate → Kopfdaten | `https://ortus.fieldworksdiary.org` |
-| hostus | Autosuggest Pflanzennamen | `https://hostus.fieldworksdiary.org` |
-| habitatus | Plot → EUNIS-Habitat | `https://habitatus.fieldworksdiary.org` |
+| Dienst    | Rolle                     | Vorgabe                                                         |
+| --------- | ------------------------- | --------------------------------------------------------------- |
+| ortus     | Koordinate → Kopfdaten   | `Ortus mit den entsprechenden für Gazetteer und GeoPackages` |
+| hostus    | Autosuggest Pflanzennamen | `Hostus mit Euro+Med Plantbase und WCVP`                      |
+| habitatus | Plot → EUNIS-Habitat     | `Habitatus (ESy-Portierung)`                                  |
 
 Die Basis-URLs stehen nicht im Quelltext, sondern in `/config.json`; im
 Container erzeugt der Entrypoint sie aus Umgebungsvariablen.
