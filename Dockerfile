@@ -3,7 +3,7 @@
 FROM nginx:alpine
 
 COPY docker/nginx.conf /etc/nginx/templates/default.conf.template
-COPY docker/entrypoint.sh /docker-entrypoint.d/40-legulus-config.sh
+COPY docker/entrypoint.sh /docker-entrypoint.d/40-expertus-config.sh
 COPY index.html styles.css /usr/share/nginx/html/
 COPY src/ /usr/share/nginx/html/src/
 
@@ -12,7 +12,7 @@ COPY src/ /usr/share/nginx/html/src/
 # Anfang an als nginx — deshalb müssen die Verzeichnisse, in die nginx beim
 # Start schreibt (Cache, PID-Datei, das aus dem Template erzeugte conf.d),
 # vorab an nginx übergeben werden.
-RUN chmod +x /docker-entrypoint.d/40-legulus-config.sh \
+RUN chmod +x /docker-entrypoint.d/40-expertus-config.sh \
  && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/conf.d /run \
  && touch /run/nginx.pid && chown nginx:nginx /run/nginx.pid
 

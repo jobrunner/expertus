@@ -1,4 +1,4 @@
-# Legulus
+# Expertus
 
 Frontend zur Bestimmung von EUNIS-Habitaten im Feld. Erfasst einen Plot
 (Koordinate, Sample-ID, Artenliste mit Deckung), holt die Standort-Kopfdaten
@@ -38,5 +38,5 @@ Container erzeugt der Entrypoint sie aus Umgebungsvariablen.
 
 ## Dokumente
 
-- Design: `docs/superpowers/specs/2026-09-13-legulus-design.md`
-- Plan: `docs/superpowers/plans/2026-09-14-legulus.md`
+- Design: `docs/superpowers/specs/2026-09-13-expertus-design.md`
+- Plan: `docs/superpowers/plans/2026-09-14-expertus.md`

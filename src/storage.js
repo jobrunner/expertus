@@ -1,9 +1,9 @@
-// Plots im Local Storage. Der Plot liegt unter legulus.plot.<sampleId>,
-// daneben ein Index unter legulus.index — damit Liste und Suche nicht alle
+// Plots im Local Storage. Der Plot liegt unter expertus.plot.<sampleId>,
+// daneben ein Index unter expertus.index — damit Liste und Suche nicht alle
 // Plots deserialisieren müssen.
 
-const INDEX_KEY = 'legulus.index'
-const PLOT_PREFIX = 'legulus.plot.'
+const INDEX_KEY = 'expertus.index'
+const PLOT_PREFIX = 'expertus.plot.'
 
 export class CollisionError extends Error {
   constructor(sampleId) {

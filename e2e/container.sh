@@ -3,12 +3,12 @@
 # Nicht-Root, kein Caching der HTML-Seite.
 set -eu
 
-docker build -q -t legulus:test . >/dev/null
+docker build -q -t expertus:test . >/dev/null
 cid=$(docker run -d -p 18080:8080 \
   -e ORTUS_BASE_URL=https://ortus.example \
   -e HABITATUS_BASE_URL=https://habitatus.example \
   -e HOSTUS_BASE_URL=https://hostus.example \
-  legulus:test)
+  expertus:test)
 trap 'docker rm -f "$cid" >/dev/null' EXIT
 
 for _ in $(seq 30); do

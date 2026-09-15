@@ -1,4 +1,4 @@
-# Legulus — Design
+# Expertus — Design
 
 **Datum:** 2026-09-13
 **Status:** abgestimmt, Implementierung noch nicht begonnen
@@ -7,18 +7,18 @@
 
 ## 1. Zweck und Abgrenzung
 
-Legulus ist ein Frontend zur Bestimmung von EUNIS-Habitaten im Feld. Der Nutzer
+Expertus ist ein Frontend zur Bestimmung von EUNIS-Habitaten im Feld. Der Nutzer
 erfasst einen **Plot** — Koordinate, Sample-ID, Artenliste mit Deckungsgraden —,
 das Frontend besorgt die Standort-Kopfdaten und lässt den Plot klassifizieren.
 Plots werden lokal gespeichert, wiedergefunden, nachjustiert und erneut
 ausgewertet.
 
-Legulus ist eine **Single-Page-Anwendung aus nativen ES-Modulen ohne
+Expertus ist eine **Single-Page-Anwendung aus nativen ES-Modulen ohne
 Build-Schritt**. Was im Repository liegt, ist das, was ausgeliefert wird.
 
 ### Die drei Dienste
 
-Legulus rechnet nichts Fachliches selbst. Es orchestriert drei bestehende
+Expertus rechnet nichts Fachliches selbst. Es orchestriert drei bestehende
 Dienste:
 
 | Dienst | Rolle | Endpunkt |
@@ -28,12 +28,12 @@ Dienste:
 | **habitatus** | Plot → EUNIS-Habitat | `POST /api/v1/classify` |
 
 Alle drei laufen unter `*.fieldworksdiary.org` und sind per CORS für die
-Legulus-Origin freigegeben (geprüft an ortus: `access-control-allow-origin`
+Expertus-Origin freigegeben (geprüft an ortus: `access-control-allow-origin`
 spiegelt die Origin, `vary: Origin`).
 
 ### Nicht Bestandteil
 
-- **Keine fachliche Logik.** Legulus bildet keine ESy-Regel nach, interpretiert
+- **Keine fachliche Logik.** Expertus bildet keine ESy-Regel nach, interpretiert
   kein Ergebnis und korrigiert keines. Es stellt dar, was habitatus liefert.
 - **Kein Offline-Betrieb.** Die App setzt Netz voraus. Gespeicherte Plots
   überleben das Neuladen, aber Kopfdaten-Abruf und Auswertung brauchen die
@@ -97,8 +97,8 @@ Formularteilnahme und die axe-Läufe des A11y-Harness (§8).
 
 ## 3. Datenmodell
 
-Ein Plot ist ein JSON-Objekt unter `legulus.plot.<sampleId>`; daneben liegt
-`legulus.index` als schlanke Liste für Übersicht und Suche, damit diese nicht
+Ein Plot ist ein JSON-Objekt unter `expertus.plot.<sampleId>`; daneben liegt
+`expertus.index` als schlanke Liste für Übersicht und Suche, damit diese nicht
 alle Plots vollständig laden müssen.
 
 ```
@@ -179,7 +179,7 @@ Eingabe: `sea_region`, `bohn_unit`, `ECO_NAME` und die Elevations-Quelle.
 
 Habitatus vergleicht `Country` als **exakte Zeichenkette** gegen das
 ESy-Vokabular: `Germany`, nicht `Deutschland`, nicht `DE`; `Czech Republic`,
-nicht `Czechia`; `United Kingdom`, nicht `Britain`. Legulus führt dafür eine
+nicht `Czechia`; `United Kingdom`, nicht `Britain`. Expertus führt dafür eine
 Kopie der 52 Zeilen aus `habitatus/data/esy-country-names.csv` als
 JS-Modul (`iso_alpha2` → `esy_country`).
 
@@ -216,7 +216,7 @@ Manuell gesetzte Werte kommen aus dem jeweiligen Vokabular (Dropdown), für
 
 Autosuggest läuft gegen `hostus GET /v1/suggest`, gefiltert auf Treffer mit
 Euro+Med-Entsprechung. Übernommen wird der **akzeptierte Euro+Med-Name**;
-Synonyme werden beim Übernehmen aufgelöst. Legulus sendet `backbone:
+Synonyme werden beim Übernehmen aufgelöst. Expertus sendet `backbone:
 "euro+med"` und schneidet EuroSL-Zählersuffixe ab (`Festuca ovina.1` →
 `Festuca ovina`), weil der Name sonst nichts trifft.
 
@@ -237,7 +237,7 @@ Escape schließt).
 ### 5.2 Deckung
 
 Habitatus nimmt ausschließlich Prozent, `0 < c ≤ 100`, und rechnet bewusst keine
-Skala um. Legulus bietet drei Eingabemodi, **je Plot umschaltbar** und in
+Skala um. Expertus bietet drei Eingabemodi, **je Plot umschaltbar** und in
 `scale` mitgespeichert:
 
 | Klasse | `bb-classic` | `bb-extended` |
@@ -361,7 +361,7 @@ Vier Abschnitte untereinander:
 
 ### 7.2 Liste und Suche
 
-Gespeist aus `legulus.index`. Je Zeile: Sample-ID, Datum, Koordinate,
+Gespeist aus `expertus.index`. Je Zeile: Sample-ID, Datum, Koordinate,
 Artenzahl, Ergebnis (Code / `?` / `+` / „nicht ausgewertet" / „veraltet" /
 „Fehler"). Freitextfilter über Sample-ID, EUNIS-Code und Artnamen, dazu ein
 Statusfilter. Klick öffnet die Maske.

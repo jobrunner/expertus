@@ -97,7 +97,7 @@ test('beim Routenwechsel meldet sich die verlassene Liste vom Store ab', async (
     window.__indexReads = 0
     const original = Storage.prototype.getItem
     Storage.prototype.getItem = function (key) {
-      if (key === 'legulus.index') window.__indexReads++
+      if (key === 'expertus.index') window.__indexReads++
       return original.call(this, key)
     }
   })
@@ -144,7 +144,7 @@ async function seed(page, plots) {
         scale: 'bb-classic',
         evaluation: p.status === 'none' ? null : { at: 'x', request: {}, response: { result: p.result }, status: p.status },
       }
-      localStorage.setItem(`legulus.plot.${p.sampleId}`, JSON.stringify(plot))
+      localStorage.setItem(`expertus.plot.${p.sampleId}`, JSON.stringify(plot))
       index.push({
         sampleId: p.sampleId,
         updatedAt: plot.updatedAt,
@@ -156,6 +156,6 @@ async function seed(page, plots) {
         status: p.status,
       })
     }
-    localStorage.setItem('legulus.index', JSON.stringify(index))
+    localStorage.setItem('expertus.index', JSON.stringify(index))
   }, plots)
 }

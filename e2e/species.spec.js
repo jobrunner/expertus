@@ -41,12 +41,12 @@ test('Pfeiltasten wandern und setzen aria-activedescendant', async ({ page }) =>
   // nicht während der Entprellung noch läuft.
   await expect(page.getByRole('listbox').getByRole('option').first()).toBeVisible()
   await input.press('ArrowDown')
-  await expect(input).toHaveAttribute('aria-activedescendant', 'legulus-option-0')
+  await expect(input).toHaveAttribute('aria-activedescendant', 'expertus-option-0')
   // Siehe Kommentar oben: nur die Vorschlagsliste, nicht die
   // Deckungsskala, die ebenfalls role="option"-Elemente enthält.
   await expect(page.getByRole('listbox').getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
   await input.press('ArrowDown')
-  await expect(input).toHaveAttribute('aria-activedescendant', 'legulus-option-1')
+  await expect(input).toHaveAttribute('aria-activedescendant', 'expertus-option-1')
 })
 
 test('Enter übernimmt die markierte Art in die Liste', async ({ page }) => {

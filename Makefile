@@ -26,8 +26,8 @@ e2e:
 	npx playwright test
 
 docker:
-	docker build -t legulus:dev .
-	docker run --rm -p 8080:8080 legulus:dev
+	docker build -t expertus:dev .
+	docker run --rm -p 8080:8080 expertus:dev
 
 docker-test:
 	sh e2e/container.sh

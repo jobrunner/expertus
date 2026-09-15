@@ -83,7 +83,7 @@ test('der Index lädt keine Plots nach', () => {
   const original = backend.getItem.bind(backend)
   backend.getItem = (k) => (gelesen.push(k), original(k))
   reader.list()
-  assert.deepEqual(gelesen, ['legulus.index'])
+  assert.deepEqual(gelesen, ['expertus.index'])
 })
 
 test('Löschen entfernt Plot und Indexeintrag', () => {
@@ -156,6 +156,6 @@ test('nextSampleId zählt am selben Tag hoch', () => {
 
 test('ein beschädigter Index kippt die App nicht', () => {
   const { backend, storage } = setup()
-  backend.setItem('legulus.index', '{kaputt')
+  backend.setItem('expertus.index', '{kaputt')
   assert.deepEqual(storage.list(), [])
 })

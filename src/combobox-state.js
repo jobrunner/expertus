@@ -4,7 +4,7 @@
 // Pattern hat genug Zustand (offen, aktiver Index, activedescendant), um
 // still falsch zu sein, und axe sieht davon nur die Attribute.
 
-export const OPTION_ID_PREFIX = 'legulus-option-'
+export const OPTION_ID_PREFIX = 'expertus-option-'
 
 export function createComboboxState() {
   let query = ''
