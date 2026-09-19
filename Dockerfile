@@ -2,7 +2,7 @@
 # Umwandlung der Frontend-Dateien findet weiterhin nicht statt — go:embed
 # legt sie unverändert ins Binärprogramm, das Ausgelieferte entspricht
 # also nach wie vor dem Repository-Inhalt.
-FROM golang:1.21-alpine AS build
+FROM golang:1.25-alpine AS build
 WORKDIR /src
 # go.sum* passt auch, falls die Datei (noch) fehlt: das Modul hat bislang
 # keine Abhängigkeit außerhalb der Standardbibliothek.
