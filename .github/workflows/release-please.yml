@@ -1,0 +1,72 @@
+# Release-Automatisierung über release-please.
+#
+# Bei jedem Push nach main untersucht release-please die Conventional Commits
+# seit dem letzten Release und pflegt einen "Release-PR", der:
+#   - die Fassungsnummer in package.json (und package-lock.json) anhebt,
+#   - CHANGELOG.md fortschreibt ([Unreleased]-artige Sammlung → versionierter
+#     Abschnitt),
+#   - und, sobald zusammengeführt, vX.Y.Z taggt + die GitHub-Release anlegt.
+#
+# Anders als bei Ortus/Tempus/Hostus gibt es hier keine VERSION-Datei als
+# extra-files-Eintrag: Expertus' Fassungsnummer steht bereits in package.json
+# (siehe embed.go, expertus.Fassung() liest sie von dort für die Fußzeile) —
+# eine zweite von Hand gepflegte Stelle würde früher oder später auseinander-
+# laufen. release-type "node" ist genau deshalb gewählt: release-please
+# aktualisiert package.json und package-lock.json nativ, ohne einen
+# extra-files-Eintrag zu brauchen. Eine VERSION-Datei zusätzlich anzulegen
+# hätte dieselbe Zahl an zwei Stellen gepflegt — genau das Problem, das
+# package.json als einzige Quelle vermeiden soll.
+#
+# Es gibt in diesem Workflow (anders als bei Ortus) keinen goreleaser-Job:
+# Expertus liefert keine Binärprogramme zum Herunterladen aus, nur das
+# Docker-Image. Das Anlegen des vX.Y.Z-Tags durch release-please löst
+# docker-release.yml (on: push: tags: ['v*']) bereits von selbst aus — ein
+# zweiter Bauschritt hier wäre doppelte Arbeit.
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Release-PR, Tag und GitHub-Release anlegen
+      pull-requests: write  # Release-PR öffnen/pflegen
+    steps:
+      # Ein Installations-Token der Release-App ausstellen (Secrets
+      # RELEASE_PLEASE_APP_CLIENT_ID / RELEASE_PLEASE_APP_KEY) — dieselbe App,
+      # die ci.yml schon für den Zugriff auf das private claude-skills-
+      # Submodul nutzt. Anders als der voreingestellte GITHUB_TOKEN lösen
+      # Pushes/PRs eines App-Tokens weitere Workflows aus, sodass der
+      # Release-PR seine Pflicht-Statusprüfungen bekommt, statt dauerhaft
+      # BLOCKIERT bei "0 von N Prüfungen" zu verharren (GitHubs
+      # Schleifenschutz nimmt nur den eingebauten GITHUB_TOKEN aus).
+      #
+      # client-id statt app-id: beide identifizieren dieselbe App, aber die
+      # Action hat app-id in v3 als veraltet markiert.
+      #
+      # Die permission-*-Eingaben grenzen das Token auf das ein, was
+      # release-please tatsächlich tut. Ohne sie würde es jede Berechtigung
+      # erben, die die Installation der App insgesamt hält — deutlich mehr,
+      # als dieser Job braucht; zizmors github-app-Prüfung würde das melden.
+      - name: Installations-Token der App erzeugen
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+          permission-contents: write      # Release-PR committen, Tag pushen, Release anlegen
+          permission-pull-requests: write # Release-PR öffnen/aktualisieren
+
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ steps.app-token.outputs.token }}
