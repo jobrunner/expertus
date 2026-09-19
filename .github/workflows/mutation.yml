@@ -1,0 +1,77 @@
+# Mutationstests mit gremlins — ein HARTES GATE auf die Go-Logik. Testabdeckung
+# sagt nur, dass eine Zeile ausgeführt wurde; Mutationstests sagen, ob ein Test
+# einen Fehler dort tatsächlich BEMERKEN würde. Der Lauf ist mit dem einzigen
+# Paket, das reine Logik statt reiner Auslieferung ist (internal/server:
+# Konfiguration aus der Umgebung, Sicherheits-Kopfzeilen, Layout-Einspeisung),
+# klein genug, um jeden PR zu gaten (Pflicht-Statusprüfung) UND wöchentlich auf
+# dem Default-Branch zu laufen. Der Bau scheitert, wenn die Mutationsbewertung
+# unter die verankerte Baseline fällt (unten; anheben, sobald die Tests besser
+# werden).
+#
+# cmd/expertus (main.go) ist ausgeschlossen: es verdrahtet nur os.Getenv und
+# http.ListenAndServe, ohne eigene Verzweigung — Mutationstests dort würden nur
+# den Prozessstart selbst treffen, nicht durch Unit-Tests erreichbar.
+name: Mutation Testing
+
+on:
+  # Läuft bei jedem PR auf main/master ohne Pfadfilter, damit es eine PFLICHT-
+  # Statusprüfung sein kann — eine pfadgefilterte Prüfung, die übersprungen
+  # wird, bliebe dauerhaft unerfüllt und würde unbeteiligte PRs blockieren. Der
+  # Lauf ist schnell (siehe Zusammenfassung).
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 3 * * 1' # Montag 03:00 UTC
+  workflow_dispatch:
+
+env:
+  GREMLINS_VERSION: 'v0.5.1'
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: gremlins (internal/server)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: gremlins installieren
+        run: go install github.com/go-gremlins/gremlins/cmd/gremlins@${{ env.GREMLINS_VERSION }}
+
+      # Hartes Gate: das Paket muss seine Baseline aus Testwirksamkeit
+      # (efficacy) und Mutatorabdeckung (mcover) erreichen, sonst beendet
+      # gremlins sich mit einem Fehler und der Job scheitert.
+      - name: Mutationstest ausführen
+        run: |
+          set -uo pipefail
+          echo "===== gremlins: internal/server (min efficacy 95%, min mutator-coverage 95%) =====" | tee mutation.log
+          if ! gremlins unleash --threshold-efficacy 95 --threshold-mcover 95 ./internal/server 2>&1 | tee -a mutation.log; then
+            echo "::error::Mutationsgate FEHLGESCHLAGEN — Bewertung unter der Baseline. Tests ergänzen, die die LIVED-Mutanten in mutation.log töten, oder (letztes Mittel) die Baseline in .github/workflows/mutation.yml mit Begründung anpassen."
+            exit 1
+          fi
+
+      - name: Zusammenfassung
+        if: always()
+        run: |
+          summary=$(grep -iE 'gremlins:|Killed:|Test efficacy:|Mutator coverage:|LIVED|NOT COVERED' mutation.log 2>/dev/null | tail -60)
+          {
+            echo '### Mutationstests (gremlins) — internal/server'
+            echo '```'
+            echo "${summary:-keine Zusammenfassung erfasst}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Bericht hochladen
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report
+          path: mutation.log
+          if-no-files-found: ignore
