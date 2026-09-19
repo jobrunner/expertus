@@ -1,0 +1,45 @@
+# Dependabot-PRs automatisch zusammenführen, sobald die CI grün ist.
+#
+# Aktiviert GitHubs eingebautes Auto-Merge für nicht-major Updates. Auto-Merge
+# respektiert das Branch-Ruleset (Pflicht-Statusprüfungen + aufgelöste
+# Diskussionen) — ein PR wird also erst zusammengeführt, wenn CI besteht und
+# offene Kommentarfäden aufgelöst sind, kein --admin-Override nötig.
+#
+# Major-Bumps bleiben zur manuellen Prüfung liegen (Auto-Merge wird für sie
+# NICHT aktiviert).
+name: Dependabot auto-merge
+
+# pull_request_target ist nötig, damit Dependabot-PRs ein Lese-SCHREIB-Token
+# bekommen (ein reiner `pull_request`-Lauf bekommt für Bot-Akteure nur ein
+# Lese-Token und kann nicht zusammenführen). Hier unbedenklich: dieser Workflow
+# checkt niemals den PR-HEAD-Code aus oder führt ihn aus — er liest nur
+# Dependabot-Metadaten und ruft die GitHub-Merge-API auf. Das klassische
+# Pwn-Request-Risiko trifft also nicht zu.
+on: pull_request_target  # zizmor: ignore[dangerous-triggers]
+
+# Least privilege; der Job muss Auto-Merge auf dem PR aktivieren können.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    # Der PR-Autor, nicht github.actor (das den zuletzt auslösenden Akteur
+    # widerspiegelt und fälschbar ist — zizmor bot-conditions).
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Dependabot-Metadaten abrufen
+        id: meta
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-Merge für minor/patch (und gruppierte) Updates aktivieren. Das
+      # Ruleset erlaubt nur Merge-Commits, daher --merge explizit anfordern.
+      - name: Auto-Merge aktivieren (nicht-major)
+        if: ${{ steps.meta.outputs.update-type != 'version-update:semver-major' }}
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

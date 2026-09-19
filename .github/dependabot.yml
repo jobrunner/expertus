@@ -1,0 +1,89 @@
+# Dependabot-Konfiguration. Siehe:
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Ökosysteme:
+#   1. github-actions — hebt actions/checkout, actions/setup-go usw. an.
+#   2. npm            — hebt Playwright und @axe-core/playwright an. Beide sind
+#                       reines Entwicklungswerkzeug (Tests), landen nie im
+#                       Docker-Image (go:embed bettet nur index.html,
+#                       styles.css und src/ ein) — trotzdem regelmäßig pflegen,
+#                       weil sie mit Netzzugriff auf echten Browsern laufen.
+#   3. gomod          — hebt das fieldworksdiary-designsystem-Modul an. Die
+#                       CI-Workflows lesen die Go-Version selbst über
+#                       go-version-file: go.mod, nicht über eine hier gepflegte
+#                       Konstante — Dependabot muss dafür also nichts anfassen.
+#   4. docker         — hebt das FROM-Tag der Bau-Stufe (golang:1.21-alpine) im
+#                       Dockerfile an. Die distroless-Laufzeitstufe
+#                       (gcr.io/distroless/static-debian12:nonroot) bekommt ihre
+#                       Sicherheitsupdates ohnehin bei jedem Neubau, weil `latest`
+#                       kein festes Tag ist — Dependabot bumpt hier nur explizit
+#                       gepinnte Tags.
+#   5. gitsubmodule   — hebt den Pin von third_party/claude-skills auf den
+#                       neuesten Stand des verfolgten Branches (main, laut
+#                       .gitmodules) an, als geprüften PR.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      # Alle Action-Bumps in EINEM PR — sie sind voneinander unabhängig,
+      # betreffen nur die CI und sind risikoarm.
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - javascript
+    groups:
+      # Playwright und sein axe-core-Plugin gehören zusammen; ein PR statt
+      # zweier vermeidet Versionskonflikte zwischen ihnen.
+      testwerkzeug:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+
+  # third_party/claude-skills ist PRIVAT; Dependabot braucht Zugriff darauf
+  # (Repositories desselben Besitzers sind standardmäßig erreichbar), sonst
+  # erscheint hier kein PR.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - skills
