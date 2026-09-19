@@ -1,0 +1,34 @@
+# zizmor-Konfiguration für Expertus
+#
+# Unsere Pin-Richtlinie ist gemischt: ci.yml, codecharta.yml, mutation.yml,
+# vuln-scan.yml usw. referenzieren Actions per Tag (z. B. @v7), gepflegt über
+# Dependabot-Bumps. docker-release.yml pinnt dagegen auf Commit-SHA, weil
+# dieser eine Workflow ein Registry-Token und eine Signierungsidentität hält
+# (siehe dessen Kopfkommentar) — SHA-Pins verhindern dort, dass ein
+# verschobenes Tag stillschweigend anderen Code mit diesen Rechten ausführt.
+# SHA-Pinning ist der Goldstandard, deaktiviert aber Dependabots automatische
+# Aktualisierung für Actions (begrenzte Unterstützung für SHA-Referenzen).
+# Für die übrigen, rechtearmen Workflows ist Tag-Pinnen + wöchentlicher
+# Dependabot-Bump der gewählte Kompromiss.
+#
+# Siehe https://docs.zizmor.sh/configuration/
+
+rules:
+  # Tag-Pinnen zulassen. Ohne das würde jedes actions/checkout@v7 usw. zu
+  # einem "high"-Befund und würde jeden Lauf gaten.
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
+
+  # artipacked meldet jeden checkout-Schritt ohne persist-credentials:false.
+  # Nützliche Prüfung, aber die Workflows, die Anmeldedaten brauchen
+  # (docker-release.yml für die Registry, release-please.yml für den
+  # App-Token), vergeben die Rechte gezielt und lecken keine Artefakte.
+  artipacked:
+    disable: true
+
+  # Der Dependabot-Cooldown wäre nett, würde aber den wöchentlichen
+  # Aktualisierungszyklus verzögern; nicht gerechtfertigt für dieses Projekt.
+  dependabot-cooldown:
+    disable: true

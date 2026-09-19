@@ -1,0 +1,132 @@
+# Wöchentliche statische Sicherheitsprüfung aller GitHub-Actions-Workflows
+# in diesem Repository mit zizmor (https://github.com/woodruffw/zizmor).
+#
+# zizmor findet Actions-spezifische Probleme, die actionlint und Dependabot
+# nicht abdecken:
+#   - Script-Injection über unvertraute github.event-Felder
+#   - Pwn-Request-Muster (pull_request_target + Checkout unvertrauten Codes)
+#   - Cache-Poisoning
+#   - veränderliche Referenzen (action@master, action@main ohne SHA-Pin)
+#   - überprivilegierte Berechtigungen
+#
+# Spiegelt vuln-scan.yml: läuft wöchentlich + manuell, öffnet/kommentiert bei
+# Funden ein `security`-markiertes GitHub-Issue.
+name: Actions Security
+
+on:
+  schedule:
+    - cron: '30 6 * * 1'      # Montag 06:30 UTC, 30 Minuten nach vuln-scan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write           # Sicherheits-Issue bei Funden öffnen/kommentieren
+      security-events: write  # SARIF in den Security-Tab hochladen
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: zizmor installieren
+        run: pip install --no-cache-dir zizmor==1.25.2
+
+      - name: zizmor ausführen
+        id: scan
+        run: |
+          # zizmor beendet sich bei Funden nicht mit 0. Wir lassen den Job nur
+          # bei High-Severity-Funden scheitern (Template-Injection, Cache-
+          # Poisoning usw.); informative und niedrige Funde erscheinen im
+          # SARIF-Upload, gaten aber nicht. Projektrichtlinie + ignorierte
+          # Prüfungen stehen in .github/zizmor.yml.
+          #
+          # Aufteilung der Exit-Codes spiegelt vuln-scan.yml:
+          #   0 — sauber
+          #   14 — High-Severity-Funde vorhanden (zizmors normaler Fehlercode)
+          #   sonst — echter Scan-Fehler
+          set +e
+          # SARIF für den Security-Tab-Upload. zizmor 1.x hat kein --output,
+          # SARIF kommt auf stdout — in die Datei umleiten. HINWEIS: mit
+          # --format sarif endet zizmor immer mit 0 (die Auswertung wird ans
+          # Code-Scanning-Dashboard delegiert) — dieser Exit-Code sagt also
+          # nichts darüber, ob Funde vorliegen.
+          zizmor --config .github/zizmor.yml --min-severity=high \
+            --format sarif . > zizmor.sarif 2> zizmor.stderr
+          # Maßgeblicher Gate-Lauf: das Standardformat endet mit 14 bei
+          # Funden, 0 wenn sauber, sonst bei einem echten Scan-Fehler.
+          # Dient zugleich als menschenlesbarer Issue-Text.
+          zizmor --config .github/zizmor.yml --min-severity=high . > zizmor.txt 2> zizmor.stderr
+          rc=$?
+          set -e
+          {
+            echo "rc=$rc"
+            if [ "$rc" = "14" ]; then
+              echo "has_findings=true"
+            else
+              echo "has_findings=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: SARIF in den Security-Tab hochladen
+        if: steps.scan.outputs.has_findings == 'true'
+        uses: github/codeql-action/upload-sarif@v4.37.9
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
+
+      - name: Label `security` sicherstellen
+        if: steps.scan.outputs.has_findings == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create security \
+            --color D93F0B \
+            --description "Security vulnerability or scan finding" \
+            --force
+
+      - name: Sicherheits-Issue öffnen oder aktualisieren
+        if: steps.scan.outputs.has_findings == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          title="Wöchentlicher Actions-Security-Scan: Funde in Workflows"
+          existing=$(gh issue list \
+            --label security \
+            --state open \
+            --search "$title in:title" \
+            --json number --jq '.[0].number // ""')
+
+          # shellcheck disable=SC2016  # Markdown-Codezaun in einfachen Anführungszeichen ist beabsichtigt wörtlich, keine Kommandosubstitution.
+          body=$(printf 'zizmor meldet Sicherheitsfunde in den GitHub-Actions-Workflows dieses Repositorys.\n\n```\n%s\n```\n\n## Fix\n\nDie obigen Funde prüfen und die vorgeschlagenen Korrekturen in den betroffenen Workflow-Dateien anwenden. Die SARIF-Ergebnisse liegen zusätzlich im Security-Tab unter Code-Scanning-Warnungen.\n' "$(cat zizmor.txt)")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label security --body "$body"
+          fi
+
+      - name: Bei Scan-Fehler mit Kontext scheitern
+        if: steps.scan.outputs.rc != '0' && steps.scan.outputs.rc != '14'
+        # Über env statt Inline-Interpolation (unsere eigene zizmor-Prüfung
+        # verlangt das) — der Wert kommt zwar aus einem Step-Output und ist
+        # daher nicht angreifersteuerbar, der statische Analysator meldet es
+        # trotzdem.
+        env:
+          RC: ${{ steps.scan.outputs.rc }}
+        run: |
+          echo "::error::zizmor endete mit rc=$RC — kein Fund, wahrscheinlich ein Scan-Fehler."
+          cat zizmor.stderr
+          exit 1
+
+      - name: Job bei Funden scheitern lassen
+        if: steps.scan.outputs.has_findings == 'true'
+        run: exit 1
