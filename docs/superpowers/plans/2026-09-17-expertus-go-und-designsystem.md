@@ -13,7 +13,22 @@
 ## Globale Randbedingungen
 
 - Go-Version in `go.mod`: `go 1.26.0`, Modulpfad `github.com/jobrunner/expertus`
-- Abhängigkeit: `github.com/jobrunner/fieldworksdiary-designsystem v0.1.0` — die einzige.
+- Abhängigkeit: `github.com/jobrunner/fieldworksdiary-designsystem` — die einzige. **Noch keine Marke veröffentlicht**, also per Pseudo-Fassung vom Hauptzweig beziehen (`go get github.com/jobrunner/fieldworksdiary-designsystem@main`).
+
+**Das Modul ist seit Erstellung dieses Plans erheblich gewachsen. Was es jetzt bietet:**
+
+| Bestandteil | Aufruf |
+|---|---|
+| Stylesheet | `designsystem.CSS()` |
+| Skript (Combobox) | `designsystem.JS()` |
+| Kopf-/Fußzeile | `designsystem.Kopfzeile(KopfDaten{…})`, `Fusszeile(FussDaten{…})` — liefern `template.HTML`, maskieren ihre Eingaben |
+| 41 Symbole | `icons.Standort()`, `icons.ChevronUnten()`, … ; `icons.Alle()`, `icons.Gruppen()` |
+| Symbol mit Klasse | `icons.MitKlasse(icons.Standort(), "icon")` |
+| Symbol in Vorlagen | `icons.Standort().HTML()` — **wichtig**, sonst maskiert `html/template` das SVG zu sichtbarem Quelltext |
+
+**Die Palette ist grün, nicht blau.** `--accent` (`#186029`) ist eine **Fläche** und trägt weiße Schrift über `--accent-on`; als **Textfarbe** dient `--accent-text`. Für Links, Reiter und Umrisse niemals `var(--accent)` verwenden — im dunklen Thema wären das 1,91:1. Es gibt kein `--success` mehr (Erfolg ist die Markenfarbe), dafür `--info`.
+
+**Komponenten, die Expertus nutzen soll, statt sie selbst zu bauen:** `.card`, `.btn`/`.btn-secondary`/`.btn-icon`, `.form-group`, `.table-wrap`, `.badge*`, `.error`/`.warning`/`.info`, `.akkordeon` (natives `<details>`), `.combobox` samt Skript, `.icon`, `.sr-only`, `.skip-link`.
 - Expertus läuft hinter Caddy unter `https://expertus.fieldworksdiary.org`. Der Server spricht **nur HTTP** auf `NGINX_PORT` (Vorgabewert 8080, Name bleibt zunächst, siehe Aufgabe 4) und terminiert kein TLS.
 - Die vorhandenen Tests sind das Sicherheitsnetz: `make test`, `make a11y`, `make e2e` müssen nach **jeder** Aufgabe grün sein.
 - Kein Bundler, kein npm zur Laufzeit. `package.json` bleibt reines Entwicklungswerkzeug.
@@ -1075,7 +1090,27 @@ make e2e
 Erwartet: grün. Der axe-Lauf prüft unter anderem die Kontraste — das
 Design-System ist auf 7:1 ausgelegt und sollte ihn eher entlasten.
 
-- [ ] **Schritt 8: Mit eigenen Augen ansehen**
+- [ ] **Schritt 8: Symbole und Skript mit ausliefern**
+
+Ergänze zwei weitere Routen analog zum Stylesheet:
+
+```go
+mux.Handle("/assets/designsystem.js", sicherheitsHeader(cfg, designSystemJSHandler()))
+```
+
+Das Skript wird für die Combobox gebraucht (Artensuche). Content-Type
+`text/javascript; charset=utf-8`.
+
+Die Symbole kommen dagegen **nicht** über eine Route, sondern werden im
+Markup eingesetzt. Da Expertus sein DOM in JavaScript baut (`src/dom.js`,
+`el()`), brauchst du die SVG-Zeichenketten im Frontend. Entscheide begründet,
+wie du sie dorthin bringst — etwa als eigene Route, die die benötigten
+Symbole als JSON oder als ES-Modul liefert, oder indem der Server sie beim
+Ausliefern in die Seite einsetzt. **Hole nicht alle 41**, sondern nur die,
+die Expertus braucht: `standort` (Knopf „Aktuellen Standort verwenden"),
+`chevron-unten` (Akkordeon), dazu was sich beim Umbau als nützlich zeigt.
+
+- [ ] **Schritt 9: Mit eigenen Augen ansehen**
 
 ```bash
 make serve
@@ -1083,7 +1118,7 @@ make serve
 
 `http://127.0.0.1:5173` öffnen, Liste und Maske ansehen. Erwartete
 Veränderung: Beschriftungen stehen über ihren Feldern statt daneben, die
-Auswahlfelder sind gleich breit, Knöpfe tragen die Akzentfarbe.
+Auswahlfelder sind gleich breit, Knöpfe tragen die grüne Akzentfarbe.
 Noch **nicht** behoben: Kopf und Inhalt stehen weiter unverbunden — das ist
 Aufgabe 6.
 
@@ -1100,11 +1135,26 @@ fiele die Seite beim Umbauen unbemerkt auf lokale Reste zurück."
 
 ---
 
-### Aufgabe 6: Seitengerüst
+### Aufgabe 6: Seitengerüst — **aus dem Modul, nicht selbst gebaut**
+
+> **Achtung, gegenüber der ursprünglichen Fassung geändert.** Dieser Plan sah vor,
+> dass Expertus sein Gerüst selbst baut. Inzwischen liefert das Modul es:
+> `designsystem.Kopfzeile()` und `Fusszeile()` samt der Regeln `.ds-kopf`,
+> `.ds-fuss` in `base.css`. **Baue es nicht nach.** Da Expertus sein HTML nicht
+> in Go erzeugt, sondern eine statische `index.html` ausliefert, gibt es zwei
+> Wege — entscheide begründet:
+>
+> 1. Der Go-Server setzt Kopf und Fuß beim Ausliefern in die Seite ein
+>    (Platzhalter ersetzen, wie es `demo/demo.go` im Modul vormacht). Vorteil:
+>    eine Quelle, Fassungsnummer und Verweise kommen aus der Konfiguration.
+> 2. `index.html` schreibt das Markup mit den Klassen `.ds-kopf` / `.ds-fuss`
+>    von Hand. Einfacher, aber das Markup kann von dem des Moduls abweichen,
+>    ohne dass es auffällt.
+>
+> Der erste Weg ist vorzuziehen; er ist im Modul erprobt.
 
 **Dateien:**
-- Anlegen: `src/layout.js`, `test/layout.test.js`
-- Ändern: `index.html`, `styles.css`
+- Ändern: `index.html`, `styles.css`, `internal/server/server.go`
 
 **Schnittstellen:**
 - Liefert: nichts nach außen — `index.html` bekommt die Gerüststruktur, `layout.js` hält die Kennungen, die `app.js` bereits nutzt (`#ansicht`, `#meldungen`).
@@ -1713,6 +1763,36 @@ waagerecht rollen; breite Tabellen rollen in ihrem eigenen Kasten.
 git add -A
 git commit -m "chore: Abnahme der Umstellung auf Go und das Design-System"
 ```
+
+---
+
+### Aufgabe 11: Die eigene Combobox durch die des Moduls ersetzen
+
+Expertus hat in `src/views/combobox.js` und `src/combobox-state.js` eine
+sorgfältig gebaute Combobox — sie war die **Vorlage** für die des Moduls.
+Jetzt liegt sie dort, geprüft und um zwei Punkte erweitert, die Expertus'
+Fassung fehlen: ein konfigurierbarer Kennungspräfix (zwei Comboboxen auf
+einer Seite kollidieren sonst) und ein `destroy()`, das auch die
+Ereignishörer abmeldet.
+
+**Zu tun:** `mountCombobox` aus `/assets/designsystem.js` beziehen statt aus
+`src/views/combobox.js`. Die Schnittstelle ist:
+
+```js
+mountCombobox({ input, listbox, suggest, onPick, onError, debounceMs, idPrefix, clearOnPick })
+```
+
+`suggest` ist der Anknüpfungspunkt an die Fachlichkeit — dort bleibt Expertus'
+Aufruf an hostus. `clearOnPick` steht auf `true`, was Expertus' Verhalten
+entspricht (Art hinzufügen, Feld leeren).
+
+**Wichtig:** `src/combobox-state.js` ist ohne Browser geprüft und hat eigene
+Tests. Prüfe, ob die Zustandslogik des Moduls dieselben Fälle abdeckt, bevor
+du die lokale Fassung löschst. Ergibt die Prüfung Lücken, melde sie — dann
+gehört die Ergänzung ins Modul, nicht zurück nach Expertus.
+
+Die bestehenden E2E-Tests der Artensuche (`e2e/species.spec.js`) sind das
+Sicherheitsnetz: Sie müssen nach dem Wechsel unverändert grün sein.
 
 ---
 
