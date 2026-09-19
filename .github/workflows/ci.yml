@@ -41,6 +41,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Go-Tests
+        run: go test ./... -v
+      - name: Go-Formatierung
+        run: test -z "$(gofmt -l .)"
       # Über make statt direkt node --test: so gibt es nur eine Definition
       # der Testsuite (das Makefile-Ziel), lokal und in der CI identisch —
       # ein direkter Aufruf war zuvor auseinandergelaufen (154 statt 151).
@@ -85,6 +92,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       # Die Oberflächentests laufen gegen Stubs, nicht gegen die echten
