@@ -1,0 +1,120 @@
+# CodeCharta-Analyse — eine 3D-"Codestadt" aus Struktur + Komplexität
+# (ccsh unifiedparser), Testabdeckung (go cover -> lcov -> coverageimport) und
+# Git-Historie / Churn / Autoren (gitlogparser). Die zusammengeführte Karte
+# wird als Artefakt hochgeladen; ansehen unter
+# https://maibornwolff.github.io/codecharta/visualization/ (expertus.cc.json.gz laden).
+#
+# Anders als bei den Geschwistern Ortus/Tempus/Hostus enthält Expertus zwei
+# Sprachen: Go (cmd/, internal/) UND JavaScript (src/) — src/ ist die
+# komplette Anwendungslogik, kein Nebenschauplatz. unifiedparser nimmt dafür
+# aber keinen zweiten Lauf: -fe akzeptiert eine kommagetrennte Liste von
+# Dateiendungen, ein einziger Aufruf mit -fe=go,js liefert eine Karte für
+# beide Sprachen. Ein Zusammenführen zweier Teilkarten wäre nur nötig, wenn
+# man getrennte Läufe bräuchte — hier nicht der Fall.
+#
+# Testabdeckung gibt es dagegen nur für Go: go test -coverprofile liefert ein
+# Profil, das sich über gcov2lcov nach lcov und dann über ccsh coverageimport
+# einspielen lässt. node --test kennt keine lcov-kompatible Ausgabe, daher
+# bleibt line_coverage bei den JS-Dateien leer — das ist in der Ratchet-
+# Konfiguration (.codecharta-ratchet.json) dokumentiert, nicht vergessen.
+#
+# Die Karte ist zugleich ein RATCHET: scripts/codecharta-ratchet.py prüft sie
+# gegen .codecharta-ratchet.json — eine Komplexitätsobergrenze je Datei (die
+# Baseline darf nicht wachsen; alles andere <= default_cap) plus ein
+# Hotspot-Gate (komplex UND untergetestet) und lässt den Bau bei einer
+# Regression scheitern; das Artefakt wird trotzdem hochgeladen (if: always()).
+# Die Baselines mit sinkenden Zahlen nachziehen, sobald der Code einfacher wird.
+name: CodeCharta
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  # Version 1.143.0 statt der aktuellen 2.x: Version 2 hat das Kartenformat
+  # umgestellt (Attribute liegen jetzt in einer separaten "lenses"-Struktur
+  # statt direkt am Dateiknoten), und scripts/codecharta-ratchet.py liest das
+  # alte Format (data.nodes mit eingebetteten attributes). Beim Anheben dieser
+  # Version müsste das Skript mitgezogen werden.
+  CCSH_VERSION: '1.143.0'
+  GCOV2LCOV_VERSION: 'v1.1.1'
+
+permissions:
+  contents: read
+
+jobs:
+  codecharta:
+    name: CodeCharta-Analyse
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # gitlogparser braucht die volle Historie für Churn/Autoren/Alter
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # ccsh läuft auf der JVM.
+      - name: Java einrichten (ccsh-Laufzeit)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: ccsh + gcov2lcov installieren
+        run: |
+          npm install -g codecharta-analysis@${{ env.CCSH_VERSION }}
+          go install github.com/jandelgado/gcov2lcov@${{ env.GCOV2LCOV_VERSION }}
+          gobin="$(go env GOBIN)"; [ -n "$gobin" ] || gobin="$(go env GOPATH)/bin"
+          echo "$gobin" >> "$GITHUB_PATH"
+
+      # Ein Lauf für beide Sprachen: -fe nimmt eine kommagetrennte Liste.
+      # Ausgeschlossen: Testdateien (beider Sprachen), das private Skill-
+      # Submodul (nicht Teil dieses Dienstes) und generierte Testfixtures.
+      - name: Struktur + Komplexität (unifiedparser, Go + JS)
+        run: |
+          ccsh unifiedparser . -fe=go,js \
+            -e='_test\.go,third_party,node_modules,\.spec\.js,^e2e/,^test/,playwright\.config\.js' \
+            -nc -o base.cc.json
+
+      - name: Testabdeckung -> cc.json (nur Go, best-effort)
+        run: |
+          # Best-effort: ein Bau-/Testfehler (den der Test-Job schon meldet) darf die
+          # Karte nicht versenken. Nur einspielen, wenn ein nicht-leeres Profil entstand.
+          go test -coverprofile=coverage.out ./... || true
+          if [ -s coverage.out ]; then
+            gcov2lcov -infile=coverage.out -outfile=coverage.info
+            ccsh coverageimport coverage.info -f lcov -nc -o coverage.cc.json
+          else
+            echo "::warning::kein Coverage-Profil erzeugt; die Karte zeigt keine Abdeckung"
+          fi
+
+      - name: Git-Historie (Churn / Autoren)
+        run: ccsh gitlogparser repo-scan --repo-path=. --add-author --silent -nc -o git.cc.json
+
+      - name: Zusammenführen zu expertus.cc.json.gz
+        run: |
+          inputs="base.cc.json git.cc.json"
+          [ -f coverage.cc.json ] && inputs="$inputs coverage.cc.json"
+          # shellcheck disable=SC2086  # $inputs ist ABSICHTLICH unquotiert: eine leerzeichengetrennte Liste von Dateinamen, die ccsh als mehrere Argumente lesen soll.
+          ccsh merge $inputs -o expertus.cc.json.gz
+
+      - name: Ratchet-Gate (Komplexitätsobergrenzen + Hotspots)
+        run: python3 scripts/codecharta-ratchet.py expertus.cc.json.gz .codecharta-ratchet.json
+
+      - name: Karte hochladen
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: codecharta-map
+          path: expertus.cc.json.gz
+          if-no-files-found: warn

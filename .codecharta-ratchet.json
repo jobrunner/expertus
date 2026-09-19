@@ -1,0 +1,36 @@
+{
+  "_comment": "Ratchet-Konfiguration für scripts/codecharta-ratchet.py, angewendet auf die zusammengeführte CodeCharta-Karte (expertus.cc.json.gz). Drei Schranken: (1) Komplexität je Datei (Summe), (2) Komplexität je FUNKTION (nicht durch Verschieben von Code umgehbar), (3) Hotspot (komplex UND ungetestet). Anders als bei Ortus deckt EIN unifiedparser-Lauf sowohl Go (internal/, cmd/) als auch JavaScript (src/) ab — ccsh nimmt mehrere Dateiendungen in einem Aufruf entgegen (-fe=go,js), ein Zusammenführen zweier Läufe war nicht nötig. Testabdeckung gibt es nur für Go (coverageimport aus go test -coverprofile); node:test liefert keine lcov-kompatible Ausgabe, daher bleibt line_coverage bei den JS-Dateien leer, und die Hotspot-Schranke unten wirkt in der Praxis nur auf den Go-Anteil. Die Komplexitätsschranken (1) und (2) gelten für beide Sprachen gleich. Ratchet die Zahlen HERUNTER, sobald der Code einfacher wird; ein Anheben einer Baseline braucht eine Begründung im Kommentar.",
+  "complexity": {
+    "metric": "complexity",
+    "default_cap": 50,
+    "_default_cap_note": "Summe der Funktionskomplexität je Datei. Jede nicht gelistete Datei muss darunter bleiben. Diese Schranke lässt sich durch Aufteilen einer Datei umgehen (die Summe wandert mit dem Code) — siehe function_complexity für die nicht umgehbare Schranke je Funktion.",
+    "baseline": {
+      "src/actions.js": 83,
+      "_note_actions": "actions.js sammelt die komplette Übersetzung von UI-Aktion zu Store-Mutation in einer einzigen großen switch-artigen Funktion (dispatch). Das ist beim Umbau von einer nginx-Auslieferung auf den Go-Dienst unverändert aus dem ursprünglichen Frontend übernommen worden, nicht neu entstanden. Aufteilen ist möglich, aber kein CI-Blocker für die Umstellung auf volle CI-Ausstattung.",
+      "src/views/plot-form.js": 53,
+      "_note_plot_form": "Das Erfassungsformular für einen Plot ist die komplexeste Ansicht der Anwendung (Koordinaten, Deckungsskalen, Artensuche in einem Formular). Ebenfalls historisch, nicht Teil dieser Umstellung."
+    }
+  },
+  "function_complexity": {
+    "metric": "max_complexity_per_function",
+    "default_cap": 10,
+    "_default_cap_note": "Die komplexeste einzelne FUNKTION einer Datei (McCabe). Das ist die eigentliche Schranke gegen Monolithen: eine Funktion behält ihre Komplexität, wohin man sie auch verschiebt. Auf der Go-Seite hält jede Funktion diese Schranke bereits ein (Höchstwert 5 in internal/server/server.go); die Baseline unten grandfathered ausschließlich JavaScript-Dateien, deren einzelne Funktionen historisch groß sind.",
+    "baseline": {
+      "src/actions.js": 81,
+      "src/views/plot-form.js": 52,
+      "src/storage.js": 30,
+      "src/views/plot-list.js": 14,
+      "src/dom.js": 16,
+      "src/views/species-section.js": 13,
+      "src/adapters/habitatus.js": 12,
+      "src/views/result.js": 11,
+      "_note_js_baseline": "Alle Werte oben stammen aus dem Frontend, das vor dem Go-Umbau bereits bestand — sie sind mit dieser Umstellung nicht neu entstanden. Sie zu senken heißt, einzelne große Funktionen aufzuteilen; das ist als spätere Aufräumarbeit sinnvoll, aber kein Kriterium für den ersten grünen CI-Lauf."
+    }
+  },
+  "hotspot": {
+    "_note": "Eine Datei ist ein Hotspot, wenn sie komplex UND ungetestet ist; neue Hotspots lassen den Bau scheitern. Weil node:test keine lcov-Ausgabe erzeugt, trägt derzeit keine JS-Datei eine line_coverage — die Schranke wirkt also nur auf den Go-Anteil, wo sie bereits heute erfüllt ist (server.go: Komplexität 18, Abdeckung 81 %).",
+    "min_complexity": 15,
+    "min_coverage": 70,
+    "allow": []
+  }
+}
