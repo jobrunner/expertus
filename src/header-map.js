@@ -21,8 +21,14 @@ const FIELDS = {
   Dunes_Bohn: (doc) => oneOf(prop(doc, 'bohn-dunes-2019', 'dunes_bohn', 'dunes_bohn'), DUNE_VALUES),
   Ecoreg: (doc) => number(prop(doc, 'ecoregions-2017', 'ecoregions', 'ECO_ID')),
   'Altitude (m)': (doc) => number(doc.gazetteer?.elevation?.meters),
-  DEG_LAT: (doc) => number(doc.coordinate?.y),
-  DEG_LON: (doc) => number(doc.coordinate?.x),
+  // Seit Aufgabe 12 kann die Anfrage in einem projizierten System stehen
+  // (Rechts-/Hochwert in Metern) — dann wäre das bloße Echo der Anfrage in
+  // doc.coordinate KEINE Gradkoordinate mehr. Die Gradkoordinate kommt
+  // deshalb aus dem reprojizierten "wgs84"-Block der Antwort; nur wenn er
+  // fehlt UND ohnehin in WGS 84 (SRID 4326) gefragt wurde, taugt der
+  // Anfrage-Echo-Wert ersatzweise noch als Gradangabe.
+  DEG_LAT: (doc) => number(doc.wgs84 ? doc.wgs84.lat : (doc.coordinate?.srid === 4326 ? doc.coordinate.y : null)),
+  DEG_LON: (doc) => number(doc.wgs84 ? doc.wgs84.lon : (doc.coordinate?.srid === 4326 ? doc.coordinate.x : null)),
 }
 
 export function deriveHeader(doc) {

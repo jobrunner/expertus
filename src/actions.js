@@ -41,6 +41,21 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     return saved
   }
 
+  // Ein neuer Koordinatenpunkt macht jedes aus ortus stammende Kopfdatum
+  // ungültig (siehe die Begründung bei setCoordinate); von Hand gesetzte
+  // Felder bleiben stehen. Von setCoordinate() UND setCoordinateInput()
+  // gebraucht, deshalb hier gemeinsam.
+  function headerFuerNeueKoordinate(p) {
+    const header = { ...p.header }
+    const origin = { ...p.headerOrigin }
+    for (const field of HEADER_FIELDS) {
+      if (origin[field] === 'manual') continue
+      header[field] = null
+      origin[field] = 'missing'
+    }
+    return { header, origin }
+  }
+
   function emptyHeader() {
     return Object.fromEntries(HEADER_FIELDS.map((f) => [f, null]))
   }
@@ -54,6 +69,7 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
       const fresh = {
         sampleId: storage.nextSampleId(),
         coordinate: null,
+        coordInput: null,
         coordSource: null,
         accuracyM: null,
         header: emptyHeader(),
@@ -94,18 +110,70 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     // Felder bleiben stehen — konsistent damit, dass eine manuelle
     // Übersteuerung auch eine eintreffende ortus-Antwort überlebt. Die
     // Belege gehören zum alten Punkt und werden verworfen.
+    // lat/lon sind hier immer WGS-84-Grad: der GPS-Knopf liefert nichts
+    // anderes, und wer die Koordinateneingabe im System WGS 84 benutzt,
+    // gibt ohnehin schon Grad ein. Für die übrigen sechs Systeme (Aufgabe
+    // 12) ist die Gradkoordinate NICHT bekannt, ohne ortus zu fragen — dafür
+    // gibt es setCoordinateInput().
     setCoordinate({ lat, lon, source, accuracyM = null }) {
       return update((p) => {
-        const header = { ...p.header }
-        const origin = { ...p.headerOrigin }
-        for (const field of HEADER_FIELDS) {
-          if (origin[field] === 'manual') continue
-          header[field] = null
-          origin[field] = 'missing'
-        }
+        const { header, origin } = headerFuerNeueKoordinate(p)
         return {
           ...p,
           coordinate: { lat, lon },
+          coordInput: { system: '4326', x: lon, y: lat, text: '' },
+          coordSource: source,
+          accuracyM,
+          header,
+          headerOrigin: origin,
+          headerEvidence: {},
+        }
+      })
+    },
+
+    // Eingabe aus der Bedienform des Design-Systems (Aufgabe 12): system ist
+    // die EPSG-Kennung oder 'mgrs', x/y bzw. text die eingegebenen Rohwerte
+    // in genau dieser Zuordnung (x=Lon/Rechtswert, y=Lat/Hochwert — die
+    // Bedienform tauscht nur die SICHTBARE Reihenfolge, nie die Bedeutung).
+    // Bei WGS 84 ist die Gradkoordinate der Rohwert selbst und wird wie
+    // bisher sofort übernommen. Bei jedem anderen System kennt nur ortus die
+    // Umrechnung — die Koordinate bleibt bis zur Antwort auf fetchHeader()
+    // unbekannt, genau wie bei einem frisch angelegten Plot ohne Koordinate.
+    // Eine geratene Umrechnung wäre hier schlimmer als ein kurzes "unbekannt":
+    // sie setzte einen Fundort stillschweigend an die falsche Stelle.
+    setCoordinateInput({ system, x, y, text, source, accuracyM = null }) {
+      if (system === '4326') {
+        const lon = Number.parseFloat(String(x).replace(',', '.'))
+        const lat = Number.parseFloat(String(y).replace(',', '.'))
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+        return this.setCoordinate({ lat, lon, source, accuracyM })
+      }
+      if (system === 'mgrs') {
+        const wert = String(text ?? '').trim()
+        if (!wert) return null
+        return update((p) => {
+          const { header, origin } = headerFuerNeueKoordinate(p)
+          return {
+            ...p,
+            coordinate: null,
+            coordInput: { system, x: null, y: null, text: wert },
+            coordSource: source,
+            accuracyM,
+            header,
+            headerOrigin: origin,
+            headerEvidence: {},
+          }
+        })
+      }
+      const ex = Number.parseFloat(String(x).replace(',', '.'))
+      const ey = Number.parseFloat(String(y).replace(',', '.'))
+      if (!Number.isFinite(ex) || !Number.isFinite(ey)) return null
+      return update((p) => {
+        const { header, origin } = headerFuerNeueKoordinate(p)
+        return {
+          ...p,
+          coordinate: null,
+          coordInput: { system, x: ex, y: ey, text: '' },
           coordSource: source,
           accuracyM,
           header,
@@ -117,7 +185,11 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
 
     async fetchHeader() {
       const current = plot()
-      if (!current?.coordinate) return
+      // Ältere, vor Aufgabe 12 gespeicherte Plots tragen noch keinen
+      // coordInput — für sie gilt weiterhin WGS 84 aus coordinate.
+      const input = current?.coordInput
+        ?? (current?.coordinate ? { system: '4326', x: current.coordinate.lon, y: current.coordinate.lat, text: '' } : null)
+      if (!input) return
       // Eine zweite Abfrage bricht die erste ab; das ist der Normalfall
       // beim Nachtippen einer Koordinate, kein Fehler.
       headerAbort?.abort()
@@ -125,7 +197,7 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
       const signal = headerAbort.signal
       store.set({ headerPending: true, error: null })
       try {
-        const { header, origin, evidence } = await ortus.lookup({ ...current.coordinate, signal })
+        const { header, origin, evidence, coordinate } = await ortus.lookup({ ...input, signal })
         // Den Plot-Stand erst NACH dem Abruf lesen: zwischen Start und
         // Eintreffen der Antwort kann der Nutzer Felder von Hand gesetzt
         // haben. Ein von Hand korrigierter Wert bleibt Vorrang vor der
@@ -139,7 +211,11 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
             mergedHeader[field] = header[field]
             mergedOrigin[field] = origin[field]
           }
-          return { ...p, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence }
+          // Bei einer Eingabe außerhalb WGS 84 war die Gradkoordinate bis
+          // hierhin unbekannt (coordinate: null) — jetzt trägt die Antwort
+          // sie nach (siehe wgs84Of() im ortus-Adapter). Bei WGS 84 ist es
+          // derselbe Wert, den setCoordinate schon gesetzt hatte.
+          return { ...p, coordinate: coordinate ?? p.coordinate, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence }
         }, { extra: { headerPending: false } })
       } catch (err) {
         // Ein Abbruch ist kein Fehler, sondern der Normalfall beim
