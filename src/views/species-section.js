@@ -23,7 +23,7 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
 
   const doppelt = plot.species.map((s) => s.name).filter((n, i, a) => a.indexOf(n) !== i)
 
-  const node = el('section', { 'aria-labelledby': 'h-arten' }, [
+  const node = el('section', { class: 'card', 'aria-labelledby': 'h-arten' }, [
     el('h3', { id: 'h-arten', text: 'Arten' }),
     el('p', {}, [
       el('label', { for: 'skala', text: 'Deckungsskala' }),
@@ -56,7 +56,7 @@ function tabelle(plot, actions) {
       el('td', { text: s.name }),
       el('td', {}, [deckung(plot, s, i, actions), el('span', { text: ` ${formatCover(s)}` })]),
       el('td', { class: 'muted', text: s.entry === 'suggest' ? 'aus Vorschlag' : 'von Hand' }),
-      el('td', {}, el('button', { type: 'button', text: 'entfernen', 'aria-label': `${s.name} entfernen`, onClick: () => actions.removeSpecies(i) })),
+      el('td', {}, el('button', { type: 'button', class: 'btn btn-secondary', text: 'entfernen', 'aria-label': `${s.name} entfernen`, onClick: () => actions.removeSpecies(i) })),
     ]))),
   ])
 }

@@ -10,10 +10,11 @@ export function renderResultSection({ plot, actions, store }) {
   const ev = plot.evaluation
   const { evaluating } = store.get()
 
-  const node = el('section', { 'aria-labelledby': 'h-ausw' }, [
+  const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
     el('h3', { id: 'h-ausw', text: 'Auswertung' }),
     el('button', {
       type: 'button',
+      class: 'btn',
       text: evaluating ? 'Wird ausgewertet …' : 'Auswerten',
       disabled: Boolean(grund) || evaluating,
       onClick: () => actions.evaluate(),
@@ -39,7 +40,7 @@ function ergebnis(ev, actions) {
     // wäre eine Dopplung.
     return el('p', {}, [
       ev.message ? el('span', { class: 'warn', text: ev.message }) : null,
-      el('button', { type: 'button', text: 'Erneut versuchen', onClick: () => actions.evaluate() }),
+      el('button', { type: 'button', class: 'btn btn-secondary', text: 'Erneut versuchen', onClick: () => actions.evaluate() }),
     ])
   }
   return el('p', {}, [

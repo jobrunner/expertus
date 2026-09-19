@@ -1,12 +1,13 @@
 // Die Maske: Standort, Kopfdaten und die eingehängten Abschnitte für Arten
 // und Auswertung. Kopfdaten werden nebenläufig geholt — pending blockiert
 // nur den Kopfdaten-Abschnitt, nie die Maske.
-import { el, clear, preserveFocus } from '../dom.js'
+import { el, clear, preserveFocus, svgIcon } from '../dom.js'
 import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS } from '../header-map.js'
 import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
 import { originLabel } from '../format.js'
 import { CollisionError } from '../storage.js'
 import { hashFor } from '../router.js'
+import { standort as standortSymbol } from '/assets/icons.js'
 
 // Welches Kopfdatum wie von Hand gesetzt wird. Text statt Auswahl nur dort,
 // wo es kein endliches Vokabular gibt.
@@ -144,8 +145,7 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     }
 
     const gps = el('button', {
-      type: 'button', text: 'Aktuellen Standort verwenden',
-      'aria-label': 'Aktuellen Standort verwenden',
+      type: 'button', class: 'btn btn-secondary',
       onClick() {
         if (!navigator.geolocation) {
           meldeGps('Standortermittlung steht in diesem Browser nicht zur Verfügung.')
@@ -172,8 +172,12 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
         )
       },
     })
+    // Das Symbol ist Schmuck neben der Beschriftung, kein Ersatz für sie
+    // (siehe icons.MitBeschriftung im Modul für den Gegenfall): der
+    // Knopftext bleibt vollständig, das Symbol kommt nur davor.
+    gps.append(svgIcon(standortSymbol), document.createTextNode(' Aktuellen Standort verwenden'))
 
-    return el('section', { 'aria-labelledby': 'h-standort' }, [
+    return el('section', { class: 'card', 'aria-labelledby': 'h-standort' }, [
       el('h3', { id: 'h-standort', text: 'Standort' }),
       feld('Sample-ID', sample),
       feld('Breite', breite),
@@ -186,13 +190,15 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   }
 
   function kopfdaten(plot, pending) {
-    return el('section', { 'aria-labelledby': 'h-kopf' }, [
+    return el('section', { class: 'card', 'aria-labelledby': 'h-kopf' }, [
       el('h3', { id: 'h-kopf', text: 'Kopfdaten' }),
-      pending ? el('p', { text: 'Kopfdaten werden geholt …' }) : null,
-      el('table', {}, [
+      pending ? el('p', { class: 'muted', text: 'Kopfdaten werden geholt …' }) : null,
+      // Eine breite Tabelle rollt in ihrem eigenen Kasten; die Seite selbst
+      // darf nicht waagerecht rollen (WCAG 1.4.10).
+      el('div', { class: 'table-wrap' }, el('table', {}, [
         el('thead', {}, el('tr', {}, ['Feld', 'Wert', 'Herkunft'].map((t) => el('th', { scope: 'col', text: t })))),
         el('tbody', {}, HEADER_FIELDS.map((f) => zeile(plot, f))),
-      ]),
+      ])),
     ])
   }
 
@@ -243,7 +249,7 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   }
 
   function feld(text, control) {
-    return el('p', {}, [el('label', { for: control.id, text }), control])
+    return el('div', { class: 'form-group' }, [el('label', { for: control.id, text }), control])
   }
 
   // Ohne Abmeldung zeichnet eine längst verlassene Ansicht bei jeder

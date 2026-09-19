@@ -8,11 +8,13 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/fs"
 	"net/http"
 	"strings"
 
 	designsystem "github.com/jobrunner/fieldworksdiary-designsystem"
+	"github.com/jobrunner/fieldworksdiary-designsystem/icons"
 )
 
 // Config trägt die Adressen der Dienste, die das Frontend anspricht. Sie
@@ -42,6 +44,7 @@ func New(cfg Config, frontend fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/assets/designsystem.css", sicherheitsHeader(cfg, designSystemCSSHandler()))
 	mux.Handle("/assets/designsystem.js", sicherheitsHeader(cfg, designSystemJSHandler()))
+	mux.Handle("/assets/icons.js", sicherheitsHeader(cfg, iconsJSHandler()))
 	mux.Handle("/config.json", sicherheitsHeader(cfg, configHandler(cfg)))
 	mux.Handle("/", sicherheitsHeader(cfg, frontendHandler(cfg, frontend)))
 	return mux
@@ -68,6 +71,50 @@ func designSystemJSHandler() http.Handler {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(designsystem.JS())
+	})
+}
+
+// verwendeteIcons listet die Symbole, die Expertus tatsächlich einsetzt —
+// nicht icons.Alle(): das Modul trägt inzwischen 41 Symbole, und eine Seite
+// bräuchte nur eines davon. Jedes trägt bereits die CSS-Klasse "icon", die
+// das Design-System für Größe und Farbe erwartet (siehe icons.MitKlasse);
+// das JavaScript muss diese Bauregel nicht kennen.
+var verwendeteIcons = map[string]icons.Icon{
+	"standort": icons.MitKlasse(icons.Standort(), "icon"),
+}
+
+// iconsJSHandler liefert die gebrauchten Symbole als ES-Modul mit
+// benannten Exporten (`export const standort = "<svg …>"`).
+//
+// Das DOM entsteht in src/dom.js über el(), das Text ausschließlich über
+// textContent setzt — nie über innerHTML, weil ein Artname aus hostus
+// Fremdtext ist und eine Einschleusung sonst als Markup ausgeführt würde
+// (siehe Kommentar in dom.js). Ein Symbol aus dem eigenen Design-System ist
+// kein Fremdtext dieser Art: es kommt aus keiner Nutzereingabe und keiner
+// Antwort eines fremden Dienstes, sondern aus demselben Ursprung wie
+// designsystem.css und wird von diesem Server selbst erzeugt. Es als reinen
+// String zu behandeln (etwa über textContent) würde das SVG genau wie
+// html/template maskieren und sichtbaren Quelltext statt eines Symbols
+// zeigen. Die Zeichenkette wird deshalb über JSON maskiert (schützt vor
+// `</script>` und Kontrollzeichen im String-Literal) in ein eigenes
+// ES-Modul geschrieben; src/dom.js bekommt dafür eine eigene, eng
+// begrenzte Funktion (svgIcon), die ausdrücklich nur mit solchem
+// vertrauten Markup aufgerufen wird — el() selbst bleibt unverändert bei
+// textContent.
+func iconsJSHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var b strings.Builder
+		for _, name := range []string{"standort"} {
+			markup, _ := json.Marshal(string(verwendeteIcons[name]))
+			b.WriteString("export const ")
+			b.WriteString(name)
+			b.WriteString(" = ")
+			b.Write(markup)
+			b.WriteString("\n")
+		}
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Write([]byte(b.String()))
 	})
 }
 

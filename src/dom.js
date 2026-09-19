@@ -21,6 +21,22 @@ export function clear(node) {
   node.replaceChildren()
 }
 
+// svgIcon baut ein Symbol des Design-Systems aus fertigem SVG-Markup.
+// Anders als el() setzt es dieses Markup NICHT über textContent, sondern
+// lässt es vom Parser als Elemente lesen — und genau deshalb ist diese
+// Funktion eng begrenzt: sie darf ausschließlich mit Markup aufgerufen
+// werden, das über /assets/icons.js vom eigenen Server kommt (siehe
+// internal/server/server.go, iconsJSHandler), nie mit einem Artnamen aus
+// hostus oder sonst einer Zeichenkette, die nicht aus dieser einen Quelle
+// stammt. Der Kommentar oben zu el() bleibt damit unverändert gültig: für
+// jeden Text, der von außen kommt, gilt weiterhin textContent, nie
+// innerHTML.
+export function svgIcon(markup) {
+  const vorlage = document.createElement('template')
+  vorlage.innerHTML = markup
+  return vorlage.content.firstElementChild
+}
+
 // Statuswechsel müssen angesagt werden, nicht nur farblich erscheinen.
 // Der Text wird immer neu gesetzt, damit auch eine Wiederholung derselben
 // Meldung vorgelesen wird.

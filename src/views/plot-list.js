@@ -20,11 +20,11 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
     clear(mount)
     mount.append(
       el('h2', { text: 'Plots' }),
-      el('div', { class: 'toolbar' }, [
+      el('div', { class: 'card toolbar' }, [
         // newPlot kann fehlschlagen (voller Speicher); dann gibt es keinen
         // Plot, zu dem navigiert werden könnte — die Meldung steht im
         // Zustand und wird von der Maske angezeigt.
-        el('button', { type: 'button', text: 'Neuen Plot anlegen', onClick: () => {
+        el('button', { type: 'button', class: 'btn', text: 'Neuen Plot anlegen', onClick: () => {
           const neu = actions.newPlot()
           if (neu) router.go({ name: 'plot', sampleId: neu.sampleId })
         } }),
@@ -39,7 +39,7 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
   function body(treffer) {
     if (!storage.list().length) return el('p', { text: 'Noch kein Plot erfasst.' })
     if (!treffer.length) return el('p', { text: 'Kein Plot passt zur Suche.' })
-    return el('table', {}, [
+    return el('div', { class: 'table-wrap' }, el('table', {}, [
       el('thead', {}, el('tr', {}, ['Sample-ID', 'Datum', 'Koordinate', 'Arten', 'Ergebnis', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
       el('tbody', {}, treffer.map((e) =>
         el('tr', {}, [
@@ -51,13 +51,13 @@ export function renderPlotList({ mount, store, storage, actions, router }) {
           el('td', { text: statusLabel(e.status) }),
         ]),
       )),
-    ])
+    ]))
   }
 
   // Jedes Bedienelement bekommt ein echtes <label>: aria-label allein
   // verliert die Klickfläche und wird von Übersetzungswerkzeugen übergangen.
   function labelled(text, control) {
-    return el('p', {}, [el('label', { for: control.id, text }), control])
+    return el('div', { class: 'form-group' }, [el('label', { for: control.id, text }), control])
   }
 
   // Ohne Abmeldung zeichnet eine längst verlassene Ansicht bei jeder
