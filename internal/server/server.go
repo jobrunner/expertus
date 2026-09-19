@@ -10,6 +10,8 @@ import (
 	"io/fs"
 	"net/http"
 	"strings"
+
+	designsystem "github.com/jobrunner/fieldworksdiary-designsystem"
 )
 
 // Config trägt die Adressen der Dienste, die das Frontend anspricht. Sie
@@ -32,9 +34,35 @@ type Config struct {
 // und ein übergebenes fs.FS macht die Tests unabhängig von der Einbettung.
 func New(cfg Config, frontend fs.FS) http.Handler {
 	mux := http.NewServeMux()
+	mux.Handle("/assets/designsystem.css", sicherheitsHeader(cfg, designSystemCSSHandler()))
+	mux.Handle("/assets/designsystem.js", sicherheitsHeader(cfg, designSystemJSHandler()))
 	mux.Handle("/config.json", sicherheitsHeader(cfg, configHandler(cfg)))
 	mux.Handle("/", sicherheitsHeader(cfg, frontendHandler(frontend)))
 	return mux
+}
+
+// designSystemCSSHandler liefert die gemeinsame Gestaltungsgrundlage. Sie
+// kommt aus dem Modul, nicht aus diesem Repository: so bekommt Expertus
+// Änderungen über einen Versionssprung statt über eine Kopie, die
+// auseinanderläuft.
+func designSystemCSSHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Write(designsystem.CSS())
+	})
+}
+
+// designSystemJSHandler liefert das Combobox-Skript des Moduls unter
+// demselben Ursprung — die CSP setzt keine eigene script-src-Regel, weil
+// genau das reicht: default-src 'self' erlaubt diese Route bereits, ohne
+// eine Lockerung eigens dafür einzuführen.
+func designSystemJSHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Write(designsystem.JS())
+	})
 }
 
 // frontendHandler liefert die eingebetteten Dateien und fällt auf

@@ -21,7 +21,11 @@ func TestLiefertFrontendDateien(t *testing.T) {
 	}{
 		{"/", "text/html; charset=utf-8", "<title>Expertus"},
 		{"/index.html", "text/html; charset=utf-8", "<title>Expertus"},
-		{"/styles.css", "text/css; charset=utf-8", ":root"},
+		// ":root" stand hier, solange styles.css die Variablen selbst
+		// definierte. Seit Aufgabe 5 kommen die aus
+		// /assets/designsystem.css; styles.css trägt nur noch, was
+		// Expertus darüber hinaus braucht.
+		{"/styles.css", "text/css; charset=utf-8", ".visually-hidden"},
 		{"/src/app.js", "text/javascript; charset=utf-8", "loadConfig"},
 	} {
 		t.Run(f.pfad, func(t *testing.T) {
