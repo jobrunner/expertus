@@ -20,3 +20,28 @@ rules:
   # Rumpf ist kosmetisch — release-please leitet Versionen aus Typ/Kopf ab,
   # nicht aus dem Rumpf.
   body-max-line-length: [1, always, 100]
+  # AUS, nicht nur gelockert: subject-case verlangt aus config-conventional
+  # einen kleingeschriebenen Betreff (verbietet Sentence-/Start-/Pascal-/
+  # Upper-Case). Das bildet eine englische Schreibkonvention ab — im
+  # Englischen beginnt der Betreff nach "feat: " normalerweise mit einem
+  # kleingeschriebenen Verb ("add", "warn about …"). Die Projektsprache
+  # hier ist aber Deutsch, und im Deutschen steht nach dem Doppelpunkt
+  # regelmäßig ein großgeschriebenes Substantiv ("Testcode wieder in die
+  # CodeCharta-Messung aufnehmen", "CI auch ohne Secret-Zugriff … "). Die
+  # Regel und die Projektsprache sind strukturell unvereinbar, nicht nur im
+  # Einzelfall unglücklich formuliert — sie krachte bei diesem allerersten
+  # Pull Request mit deutschen Betreffs (commitlint prüft nur PRs; die
+  # früheren deutschen Commits liefen direkt auf main und wurden nie
+  # geprüft). release-please liest davon nichts mit: es leitet die nächste
+  # Fassung aus dem TYP (feat/fix/…) und einem `!`/BREAKING CHANGE ab, nie
+  # aus der Groß-/Kleinschreibung des Betreffs — das bleibt unberührt.
+  #
+  # Andere Regeln aus config-conventional durchgesehen, die ebenfalls an
+  # deutschen Betreffs scheitern könnten: type-case (verlangt Kleinschreibung
+  # nur für das TYP-Wort selbst, z. B. "fix", "feat" — die sind ohnehin
+  # englisch und schon klein) und subject-full-stop (kein Punkt am Satzende)
+  # kollidieren nicht mit der deutschen Sprache als solcher, nur mit
+  # bestimmten Schreibweisen, die dieses Repo ohnehin nicht verwendet
+  # (unsere Betreffs enden nie auf einen Punkt). Keine weitere Regel bezieht
+  # sich auf die Groß-/Kleinschreibung von natürlichsprachigem Text.
+  subject-case: [0, always]

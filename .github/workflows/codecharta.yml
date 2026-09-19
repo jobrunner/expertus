@@ -25,34 +25,29 @@
 # Regression scheitern; das Artefakt wird trotzdem hochgeladen (if: always()).
 # Die Baselines mit sinkenden Zahlen nachziehen, sobald der Code einfacher wird.
 #
-# Zwei Nachbesserungen nach dem ersten scharfen Lauf auf main (CodeCharta
-# schlug dort fehl):
+# Ausgeschlossen wird NUR Fremdcode: third_party/ (privates Skill-Submodul,
+# nicht Teil dieses Dienstes) und node_modules/. Test- und E2E-Code (test/,
+# e2e/, *_test.go) zählt bewusst MIT — Testcode ist Code: dass
+# test/actions.test.js eine Dateikomplexität von 65 hat, ist ein echter
+# Befund über die Wartbarkeit der Testsuite, kein Messfehler, den man durch
+# Ausschluss zum Verschwinden bringen dürfte. Ein früherer Versuch, `test/`
+# und `e2e/` auszuschließen, wurde deshalb zurückgenommen; siehe die
+# Baseline in .codecharta-ratchet.json für die Datei, die dadurch über der
+# Komplexitätsgrenze liegt.
 #
-#   1. Der Ausschluss von Test-/E2E-Dateien griff nicht: `^test/` und `^e2e/`
-#      als Anker matchen NICHT gegen die von unifiedparser gelieferten
-#      Pfade (lokal mit ccsh 1.143.0 nachvollzogen — mit den Ankern blieben
-#      test/ und e2e/ im Baum, ohne sie verschwanden sie). Die Muster unten
-#      sind deshalb unverankerte Teilstrings (`test`, `e2e`); im Repository
-#      kommt keiner dieser beiden Namen sonst als Pfadbestandteil vor
-#      (testdata/ enthält nur JSON-Fixtures, die -fe=go,js ohnehin nicht
-#      erfasst). Dadurch waren test/*.test.js-Dateien Teil der Karte,
-#      manche davon über der Komplexitätsgrenze (actions.test.js: 65) —
-#      das hätte beim nächsten Lauf das Ratchet-Gate zu Unrecht rot werden
-#      lassen, weil die Baseline nur Produktionscode kennt.
-#   2. `ccsh merge` fragt interaktiv nach, wenn zwei Eingabeprojekte auf
-#      oberster Ebene KEINE gemeinsame Struktur haben (Kotter-Terminal-
-#      Sitzung) — in der CI ohne TTY endet das nicht in einer Nachfrage,
-#      sondern in einem Absturz. `git.cc.json` (gitlogparser) deckt den
-#      GESAMTEN Verlauf ab, also auch Dateien außerhalb dessen, was
-#      unifiedparser als Go/JS erfasst (Makefile, README.md, docs/ …) —
-#      ob das mit base.cc.json/coverage.cc.json noch als "gemeinsame
-#      Struktur" durchgeht, hing offenbar von genau dieser Dateiliste ab.
-#      `-f` ("force merge non-overlapping modules at the top-level
-#      structure", siehe `ccsh merge --help`) ist die dafür vorgesehene,
-#      nicht-interaktive Bestätigung — lokal nachgestellt (zwei Projekte
-#      mit komplett disjunkten Wurzelordnern hängen ohne TTY und enden erst
-#      nach dem Timeout; mit `-f` läuft derselbe Merge durch und beide
-#      Module stehen unverändert im Ergebnis, es geht nichts verloren).
+# `ccsh merge` fragt interaktiv nach, wenn zwei Eingabeprojekte auf oberster
+# Ebene KEINE gemeinsame Struktur haben (Kotter-Terminal-Sitzung) — in der
+# CI ohne TTY endet das nicht in einer Nachfrage, sondern in einem Absturz.
+# `git.cc.json` (gitlogparser) deckt den GESAMTEN Verlauf ab, also auch
+# Dateien außerhalb dessen, was unifiedparser als Go/JS erfasst (Makefile,
+# README.md, docs/ …) — ob das mit base.cc.json/coverage.cc.json noch als
+# "gemeinsame Struktur" durchgeht, hing offenbar von genau dieser
+# Dateiliste ab. `-f` ("force merge non-overlapping modules at the
+# top-level structure", siehe `ccsh merge --help`) ist die dafür
+# vorgesehene, nicht-interaktive Bestätigung — lokal nachgestellt (zwei
+# Projekte mit komplett disjunkten Wurzelordnern hängen ohne TTY und enden
+# erst nach dem Timeout; mit `-f` läuft derselbe Merge durch und beide
+# Module stehen unverändert im Ergebnis, es geht nichts verloren).
 name: CodeCharta
 
 on:
@@ -107,16 +102,12 @@ jobs:
           echo "$gobin" >> "$GITHUB_PATH"
 
       # Ein Lauf für beide Sprachen: -fe nimmt eine kommagetrennte Liste.
-      # Ausgeschlossen: Testdateien (beider Sprachen), das private Skill-
-      # Submodul (nicht Teil dieses Dienstes) und generierte Testfixtures.
-      # ACHTUNG: unverankerte Teilstrings, kein `^test/`/`^e2e/` — die Anker
-      # matchen nicht gegen die von unifiedparser gelieferten Pfade (siehe
-      # Kopfkommentar, Punkt 1). Im Repository kommen "test" und "e2e" sonst
-      # an keiner Stelle als Pfadbestandteil vor.
+      # Ausgeschlossen wird NUR Fremdcode (siehe Kopfkommentar) — Test- und
+      # E2E-Code zählt bewusst mit.
       - name: Struktur + Komplexität (unifiedparser, Go + JS)
         run: |
           ccsh unifiedparser . -fe=go,js \
-            -e='_test\.go,third_party,node_modules,\.spec\.js,e2e,test,playwright\.config\.js' \
+            -e='third_party,node_modules' \
             -nc -o base.cc.json
 
       - name: Testabdeckung -> cc.json (nur Go, best-effort)
