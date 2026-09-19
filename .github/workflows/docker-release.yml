@@ -2,15 +2,22 @@
 # schiebt Kandidaten je Architektur, führt sie zu einem Multi-Arch-Manifest
 # zusammen, signiert es schlüssellos mit cosign und hängt eine SBOM an.
 #
-# Gebaut wird aus dem Dockerfile im Wurzelverzeichnis: nginx:alpine, das das
-# Quellverzeichnis unverändert ausliefert, als Nutzer nginx. Die Basis-URLs
-# der drei Dienste kommen zur Laufzeit aus der Umgebung, nicht aus dem Image
-# — dasselbe Image läuft gegen Produktion und gegen eine Testumgebung.
+# Gebaut wird aus dem Dockerfile im Wurzelverzeichnis: ein zweistufiger
+# Go-Bau (golang:1.21-alpine), der das Binärprogramm mit go:embed erzeugt,
+# ausgeliefert auf gcr.io/distroless/static-debian12:nonroot als Nutzer
+# nonroot. Das ist NICHT mehr die frühere nginx:alpine-Auslieferung des
+# unveränderten Quellverzeichnisses — der Go-Umbau hat das Dockerfile
+# ersetzt, dieser Kommentar war stehen geblieben. Was von der alten
+# Beschreibung noch gilt: die Basis-URLs der Fachdienste kommen weiterhin
+# zur Laufzeit aus der Umgebung, nicht aus dem Image — dasselbe Image läuft
+# gegen Produktion und gegen eine Testumgebung.
 #
 # Die Action-Pins stehen hier als Commit-SHA, nicht als Tag: dieser Workflow
 # hält ein Registry-Token und eine Signierungsidentität, und ein Tag lässt
-# sich verschieben. Die beiden älteren Jobs in ci.yml verweisen weiter auf
-# Tags; das ist noch nicht vereinheitlicht.
+# sich verschieben. Die übrigen Workflows pinnen bewusst per Tag (siehe
+# .github/zizmor.yml) — dort hält keiner ein vergleichbares Recht, sodass
+# Dependabots automatische Aktualisierung den Mehraufwand eines SHA-Pins
+# nicht rechtfertigt.
 name: Docker Release
 
 on:
