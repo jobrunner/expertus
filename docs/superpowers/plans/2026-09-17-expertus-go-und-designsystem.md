@@ -1796,6 +1796,53 @@ Sicherheitsnetz: Sie müssen nach dem Wechsel unverändert grün sein.
 
 ---
 
+### Aufgabe 12: Koordinateneingabe aus dem Modul übernehmen
+
+Expertus hat heute zwei Felder untereinander (`Breite`, `Länge`) mit einem
+Einfüge-Handler, dessen Kommentar bereits sagt, er stamme „aus der
+ortus-Testkonsole". Das Modul liefert die ausgereifte Fassung:
+
+```js
+mountKoordinaten({ container, systeme, onChange, idPrefix })
+```
+
+**Expertus bekommt alle sieben Systeme** — dieselben wie Ortus: WGS 84, Web
+Mercator, ETRS89/UTM 32N und 33N, Gauß-Krüger Zone 2 und 3, MGRS. Das ist
+möglich, weil Expertus seine Koordinaten an Ortus schickt und Ortus
+transformieren kann. (Tempus hat bewusst nur WGS 84, weil es keine
+Transformation unterstützt — dort erscheint dann gar keine Auswahl.)
+
+Die Systemliste mit Beschriftungen und Platzhaltern steht in Ortus'
+`frontend.go` als `sridConfig`; übernimm sie von dort, damit beide Dienste
+dieselben Bezeichnungen zeigen.
+
+**Was die Bedienform mitbringt** und was Expertus deshalb **nicht** selbst
+bauen muss:
+- zwei Felder nebeneinander, auf schmalen Geräten untereinander
+- die sichtbare Reihenfolge wechselt mit dem System: bei WGS 84 die Breite
+  zuerst, bei projizierten Systemen der Rechtswert. **Nur die Position
+  tauscht, nicht die Bedeutung.**
+- MGRS als einzelnes Textfeld statt zweier Zahlenfelder
+- das Einfügen eines Paares in ein Feld füllt beide, mit deutschen
+  Dezimalkommata; ein einzelner Wert wird normal eingefügt
+- Werte werden beim Systemwechsel geleert
+
+**Zu tun:** `src/views/plot-form.js`, Funktion `standort` — die beiden
+`el('input')` für Breite und Länge samt `paste`-Handler durch die Bedienform
+ersetzen. `onChange` übergibt System und Werte; Expertus reicht sie wie
+bisher an `actions.setCoordinate` und `actions.fetchHeader` weiter.
+
+**Wichtig:** Der GPS-Knopf („Aktuellen Standort verwenden") liefert immer
+WGS 84. Stelle das System beim Übernehmen einer GPS-Position entsprechend um
+— Ortus macht das genauso.
+
+**Sicherheitsnetz:** `e2e/plot-form.spec.js` prüft die Koordinateneingabe.
+Diese Tests müssen nach dem Umbau grün sein; sprechen sie Felder über
+Beschriftungen an, könnten sie durch die wechselnden Beschriftungen brechen —
+dann ist der Test anzupassen, nicht die Bedienform.
+
+---
+
 ## Was dieser Plan nicht enthält
 
 - Die Anbindung von Situs. Vorbereitet ist nur der Platz dafür:
