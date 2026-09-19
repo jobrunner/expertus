@@ -1,0 +1,276 @@
+# Wöchentliche Schwachstellenprüfung auf dem Default-Branch. Der reguläre
+# CI-Lauf prüft bei jedem Push/PR den Quellcode; dieser Lauf läuft nach Zeitplan,
+# damit neu veröffentlichte CVEs auch ohne PR-Aktivität sichtbar werden.
+#
+# Drei Jobs, weil Expertus zwei getrennte Abhängigkeitswelten hat:
+#   - go-scan (govulncheck)  — Go-Standardbibliothek + Module, erreichbar vom
+#     tatsächlich gebauten Code aus. Das ist, was ins Image kommt.
+#   - npm-audit (npm audit)  — die einzigen JS-Abhängigkeiten sind reines
+#     Entwicklungswerkzeug (Playwright, @axe-core/playwright) für Tests, nicht
+#     Teil der Auslieferung: go:embed bettet nur index.html, styles.css und
+#     src/ ein, node_modules landet nie im Image (siehe Dockerfile). Ein Fund
+#     hier ist also kein Vorfall in Produktion, sondern ein Risiko für alle,
+#     die lokal `npm install` ausführen bzw. für den CI-Runner selbst — deshalb
+#     niedrigere Dringlichkeit als bei go-scan, aber nicht ignoriert: die Test-
+#     Werkzeuge laufen mit Netzzugriff auf echten Browsern.
+#   - image-scan (trivy)     — das VERÖFFENTLICHTE ghcr.io-Image (:latest).
+#     govulncheck deckt nur erreichbaren Go-Code ab; trivy findet zusätzlich
+#     OS-Pakete der distroless-Basis und Bibliotheks-CVEs, die govulncheck als
+#     nicht erreichbar einstuft, aber im ausgelieferten Binärprogramm stecken.
+#     Ein zur Release-Zeit saubenes Image veraltet, sobald neue CVEs bekannt
+#     werden — dieser Job deckt das auf, ohne auf das nächste Release zu warten.
+#
+# Auswertung (alle drei Jobs) unterscheidet drei Fälle:
+#   - Fund (govulncheck exit 3 / npm audit mit high|critical / trivy JSON mit
+#     behebbaren CRITICAL,HIGH) → `security`-markiertes Issue öffnen/kommentieren,
+#     Job scheitern lassen
+#   - saubER (exit 0) → stillschweigend erfolgreich
+#   - Scan-Fehler (Bau schlug fehl, Netzproblem, unerwarteter Exit) → Job
+#     scheitern lassen OHNE Issue, damit "neue CVEs" nicht gemeldet wird, wenn
+#     eigentlich der Scan selbst kaputt war
+name: Vuln Scan
+
+on:
+  schedule:
+    # Montag 06:00 UTC, nach der üblichen Dienstags-Freigabe des Go-
+    # Sicherheitsteams in der Vorwoche.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+# Least privilege auf Workflow-Ebene; die Scan-Jobs ergänzen selbst
+# `issues: write`, damit kein Job, der kein Issue öffnet, diese Berechtigung
+# je trägt.
+permissions:
+  contents: read
+
+jobs:
+  go-scan:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write   # Sicherheits-Issue öffnen/kommentieren
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: govulncheck ausführen
+        id: vuln
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          # -json liefert auch bei Funden eine strukturierte Ausgabe. Exit-Codes:
+          #   0 — keine Schwachstelle
+          #   3 — Schwachstellen gefunden
+          #   sonst — Scan fehlgeschlagen (Baufehler, Netz, …)
+          set +e
+          govulncheck -json ./... > vuln-report.json 2> vuln-stderr.txt
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          govulncheck ./... > vuln-report.txt 2>&1 || true
+
+      - name: Label `security` sicherstellen
+        if: steps.vuln.outputs.rc == '3'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create security \
+            --color D93F0B \
+            --description "Security vulnerability or scan finding" \
+            --force
+
+      - name: Sicherheits-Issue öffnen oder aktualisieren
+        if: steps.vuln.outputs.rc == '3'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          title="Wöchentlicher Vuln-Scan: neue CVEs entdeckt (Go)"
+          existing=$(gh issue list \
+            --label security \
+            --state open \
+            --search "$title in:title" \
+            --json number --jq '.[0].number // ""')
+
+          # shellcheck disable=SC2016  # Markdown-Codezaun/Backticks in einfachen Anführungszeichen sind beabsichtigt wörtlich.
+          body=$(printf 'govulncheck meldet Schwachstellen auf dem Default-Branch.\n\n```\n%s\n```\n\n## Fix\n\nMeist hilft ein Bump der Go-Version, mit der `actions/setup-go` (go-version-file: go.mod) gebaut wird — go.mod selbst nennt nur die Mindestsprachversion. Dependabot legt für Modul-CVEs unter Umständen bereits einen PR an.\n' "$(cat vuln-report.txt)")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label security --body "$body"
+          fi
+
+      - name: Bei Scan-Fehler mit Kontext scheitern
+        if: steps.vuln.outputs.rc != '0' && steps.vuln.outputs.rc != '3'
+        env:
+          RC: ${{ steps.vuln.outputs.rc }}
+        run: |
+          echo "::error::govulncheck endete mit $RC — kein CVE-Fund, wahrscheinlich ein Scan-Fehler. Details im Log."
+          cat vuln-stderr.txt
+          exit 1
+
+      - name: Job bei Funden scheitern lassen
+        if: steps.vuln.outputs.rc == '3'
+        run: exit 1
+
+  npm-audit:
+    name: npm audit (Entwicklungswerkzeug)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write   # Sicherheits-Issue öffnen/kommentieren
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: npm audit ausführen
+        id: audit
+        run: |
+          npm install --package-lock-only
+          # --audit-level greift nur auf die Exit-Code-Schwelle, nicht auf den
+          # JSON-Inhalt — deshalb selbst über die Fund-Liste zählen. high/
+          # critical, weil moderate/low bei reinem Testwerkzeug ohne Auslieferung
+          # ins Image kein Vorfall ist, für den ein Issue aufgeweckt werden muss.
+          set +e
+          npm audit --json > audit-report.json 2> audit-stderr.txt
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Funde zählen
+        id: findings
+        if: steps.audit.outputs.rc != '0'
+        run: |
+          count=$(jq '[.vulnerabilities[]? | select(.severity == "high" or .severity == "critical")] | length' audit-report.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          jq -r '.vulnerabilities[]? | select(.severity == "high" or .severity == "critical") | "\(.severity)\t\(.name)\tfix: \(.fixAvailable)"' audit-report.json > audit-report.txt || true
+          cat audit-report.txt
+
+      - name: Label `security` sicherstellen
+        if: steps.findings.outputs.count != '' && steps.findings.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create security \
+            --color D93F0B \
+            --description "Security vulnerability or scan finding" \
+            --force
+
+      - name: Sicherheits-Issue öffnen oder aktualisieren
+        if: steps.findings.outputs.count != '' && steps.findings.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          title="Wöchentlicher Vuln-Scan: neue CVEs entdeckt (npm, Entwicklungswerkzeug)"
+          existing=$(gh issue list \
+            --label security \
+            --state open \
+            --search "$title in:title" \
+            --json number --jq '.[0].number // ""')
+
+          # shellcheck disable=SC2016  # Markdown-Codezaun/Backticks in einfachen Anführungszeichen sind beabsichtigt wörtlich.
+          body=$(printf 'npm audit meldet high/critical-Funde in den Entwicklungsabhängigkeiten (Playwright, axe-core). Diese landen NICHT im Docker-Image — go:embed bettet nur index.html, styles.css und src/ ein — betroffen ist nur, wer lokal installiert oder CI ausführt.\n\n```\n%s\n```\n\n## Fix\n\n`npm audit fix` bzw. die betroffene Abhängigkeit in package.json anheben. Dependabot legt für npm-Bumps unter Umständen bereits einen PR an.\n' "$(cat audit-report.txt)")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label security --body "$body"
+          fi
+
+      - name: Bei Scan-Fehler mit Kontext scheitern
+        if: steps.audit.outputs.rc != '0' && (steps.findings.outputs.count == '' || steps.findings.outputs.count == '0')
+        env:
+          RC: ${{ steps.audit.outputs.rc }}
+        run: |
+          echo "::error::npm audit endete mit $RC ohne auswertbare high/critical-Funde — wahrscheinlich ein Scan-Fehler. Details im Log."
+          cat audit-stderr.txt
+          exit 1
+
+      - name: Job bei Funden scheitern lassen
+        if: steps.findings.outputs.count != '' && steps.findings.outputs.count != '0'
+        run: exit 1
+
+  image-scan:
+    name: trivy (veröffentlichtes Image)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write   # Sicherheits-Issue öffnen/kommentieren
+    steps:
+      # ignore-unfixed: nur CVEs mit verfügbarem Fix (Basis-Image-Update oder
+      # `go get`) öffnen ein Issue — das ist umsetzbar. Unbehobene CVEs
+      # erscheinen weiterhin im SARIF der Security-Tab-Integration, falls eine
+      # eingerichtet wird.
+      - name: Trivy gegen ghcr.io-Image ausführen (JSON)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'ghcr.io/${{ github.repository }}:latest'
+          format: 'json'
+          output: 'trivy-report.json'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - name: Funde zählen
+        id: findings
+        run: |
+          count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-report.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Behebbare CRITICAL/HIGH-Schwachstellen: $count"
+
+      - name: Menschenlesbaren Bericht bauen
+        if: steps.findings.outputs.count != '0'
+        run: |
+          jq -r '
+            [.Results[]? | .Target as $t | .Vulnerabilities[]?
+             | {sev: .Severity, id: .VulnerabilityID, pkg: .PkgName,
+                installed: .InstalledVersion, fixed: .FixedVersion, target: $t}]
+            | sort_by(.sev) | .[]
+            | "\(.sev)\t\(.id)\t\(.pkg) \(.installed) → \(.fixed)\t[\(.target)]"
+          ' trivy-report.json > trivy-report.txt
+          cat trivy-report.txt
+
+      - name: Label `security` sicherstellen
+        if: steps.findings.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create security \
+            --color D93F0B \
+            --description "Security vulnerability or scan finding" \
+            --force
+
+      - name: Sicherheits-Issue öffnen oder aktualisieren
+        if: steps.findings.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FINDING_COUNT: ${{ steps.findings.outputs.count }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          title="Wöchentlicher Image-Scan: neue CVEs im veröffentlichten Docker-Image"
+          existing=$(gh issue list \
+            --label security \
+            --state open \
+            --search "$title in:title" \
+            --json number --jq '.[0].number // ""')
+
+          # shellcheck disable=SC2016  # Markdown-Codezaun/Backticks in einfachen Anführungszeichen sind beabsichtigt wörtlich.
+          body=$(printf 'Trivy meldet %s behebbare CRITICAL/HIGH-Schwachstellen in `ghcr.io/%s:latest`.\n\n```\n%s\n```\n\n## Fix\n\n- Basis-Image (gcr.io/distroless/static-debian12): auf das nächste Tag warten bzw. per Dependabot-PR anheben.\n- Go-Module: `go get <modul>@<gefixte version>` (Dependabot legt unter Umständen bereits einen PR an).\n\nDer Fix erreicht Nutzer erst mit dem nächsten Release.\n' "$FINDING_COUNT" "$REPOSITORY" "$(cat trivy-report.txt)")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label security --body "$body"
+          fi
+
+      - name: Job bei Funden scheitern lassen
+        if: steps.findings.outputs.count != '0'
+        run: exit 1
