@@ -21,6 +21,8 @@ func main() {
 		HabitatusBaseURL: os.Getenv("HABITATUS_BASE_URL"),
 		HostusBaseURL:    os.Getenv("HOSTUS_BASE_URL"),
 		SitusBaseURL:     os.Getenv("SITUS_BASE_URL"),
+		// Aus package.json, nicht hier erfunden — siehe expertus.Fassung().
+		Fassung: expertus.Fassung(),
 	}
 	log.Printf("Expertus auf :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, server.New(cfg, expertus.Frontend)))

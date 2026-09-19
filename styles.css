@@ -64,3 +64,23 @@ th,
 td {
   overflow-wrap: break-word;
 }
+
+/* --- Hauptnavigation --- */
+
+/* Sitzt als eigenständiges Element neben dem Kopf, nicht darin: Kopfzeile()
+   aus dem Design-System liefert ein geschlossenes <header>, in das sich
+   die Navigation nicht mehr einfügen ließe. Der Abstand nach unten ersetzt
+   den, den ein <header> mit Navigation als Flex-Kind sonst durch dessen
+   eigenen gap bekäme. */
+nav[aria-label='Hauptnavigation'] {
+  margin-bottom: 1.5rem;
+}
+
+/* --- Herkunftsangabe --- */
+
+/* Eigener Absatz statt eines Verweises in FussDaten: die Angabe ist
+   Fließtext, kein Link mit echtem Ziel — siehe die Begründung bei fuss()
+   in internal/server/server.go. */
+.quelle {
+  margin-top: 2rem;
+}

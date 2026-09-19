@@ -10,15 +10,35 @@
   </head>
   <body>
     <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
-    <header>
-      <h1>Expertus</h1>
+    <!-- Kopf, Hauptnavigation, Inhalt und Fuß teilen sich diesen einen
+         .container: zuvor begann der Kopf am Fensterrand, während der
+         Inhalt auf 48rem zentriert war und 272px weiter innen begann — die
+         Seite wirkte zerrissen. Die beiden Platzhalter unten (Kopf-Marke,
+         Fuß-Marke) ersetzt internal/server/server.go beim Ausliefern durch
+         das Markup von designsystem.Kopfzeile()/Fusszeile(); index.html
+         baut das Gerüst nicht selbst nach (siehe die Begründung dort). Kopf
+         und Fuß stehen hier bewusst NICHT innerhalb der Hauptinhaltsmarke —
+         verschachtelt verlören sie ihre Landmarkenfunktion für
+         Screenreader, ein Fehler, der dem Design-System selbst an dieser
+         Stelle schon einmal passiert ist. -->
+    <div class="container">
+      __KOPF__
       <nav aria-label="Hauptnavigation">
         <a href="#/plots">Plots</a>
       </nav>
-    </header>
-    <main id="inhalt" class="container">
-      <div id="ansicht"></div>
-    </main>
+      <main id="inhalt">
+        <div id="ansicht"></div>
+      </main>
+      <!-- Herkunftsangabe: Expertus liest fremde Daten von drei Diensten.
+           Sie steht als eigener Absatz hier statt in FussDaten, weil die
+           Fußzeile des Design-Systems dafür kein Textfeld vorsieht — nur
+           Verweise (die echte Ziele brauchen) und die Fassungszeile. -->
+      <p class="quelle muted">
+        Habitatzuordnung über habitatus (EUNIS), Standortdaten über ortus,
+        Artnamen über hostus.
+      </p>
+      __FUSS__
+    </div>
     <div id="meldungen" role="status" aria-live="polite" class="visually-hidden"></div>
     <noscript>Expertus braucht JavaScript.</noscript>
   </body>

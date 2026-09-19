@@ -7,6 +7,7 @@
 package server
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -27,6 +28,11 @@ type Config struct {
 	// abrufbar sein. Leer bleibt die Adresse aus CSP und /config.json
 	// heraus.
 	SitusBaseURL string
+	// Fassung steht in der Fußzeile. Sie kommt von außen (main.go liest
+	// sie über expertus.Fassung() aus package.json) statt hier fest zu
+	// stehen — sonst müsste dieses Paket bei jeder Freigabe geändert
+	// werden, obwohl es mit der Versionsnummer selbst nichts zu tun hat.
+	Fassung string
 }
 
 // New baut den Router. Das Dateisystem wird übergeben, nicht hier geholt:
@@ -37,7 +43,7 @@ func New(cfg Config, frontend fs.FS) http.Handler {
 	mux.Handle("/assets/designsystem.css", sicherheitsHeader(cfg, designSystemCSSHandler()))
 	mux.Handle("/assets/designsystem.js", sicherheitsHeader(cfg, designSystemJSHandler()))
 	mux.Handle("/config.json", sicherheitsHeader(cfg, configHandler(cfg)))
-	mux.Handle("/", sicherheitsHeader(cfg, frontendHandler(frontend)))
+	mux.Handle("/", sicherheitsHeader(cfg, frontendHandler(cfg, frontend)))
 	return mux
 }
 
@@ -68,7 +74,7 @@ func designSystemJSHandler() http.Handler {
 // frontendHandler liefert die eingebetteten Dateien und fällt auf
 // index.html zurück, wenn ein Pfad nicht existiert — der Ersatz für
 // try_files aus der nginx-Konfiguration.
-func frontendHandler(frontend fs.FS) http.Handler {
+func frontendHandler(cfg Config, frontend fs.FS) http.Handler {
 	server := http.FileServer(http.FS(frontend))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pfad := strings.TrimPrefix(r.URL.Path, "/")
@@ -80,13 +86,13 @@ func frontendHandler(frontend fs.FS) http.Handler {
 		// auf "./" um, um doppelten Inhalt unter zwei Adressen zu
 		// vermeiden — das führte hier zu einer Umleitungsschleife.
 		if pfad == "index.html" {
-			index(w, frontend)
+			index(w, frontend, cfg)
 			return
 		}
 		// Verzeichnisse werden nicht ausgeliefert: http.FileServer würde
 		// sie auflisten und damit die Dateistruktur preisgeben.
 		if info, err := fs.Stat(frontend, pfad); err != nil || info.IsDir() {
-			index(w, frontend)
+			index(w, frontend, cfg)
 			return
 		}
 		r2 := r.Clone(r.Context())
@@ -95,12 +101,56 @@ func frontendHandler(frontend fs.FS) http.Handler {
 	})
 }
 
-func index(w http.ResponseWriter, frontend fs.FS) {
+// kopfPlatzhalter und fussPlatzhalter markieren die Stellen in index.html,
+// an denen Kopf- und Fußzeile des Design-Systems eingesetzt werden.
+// index.html bleibt damit statisch und lesbar, während das tatsächliche
+// Markup aus designsystem.Kopfzeile()/Fusszeile() kommt — genau wie es
+// demo/demo.go im Modul selbst vormacht (dort __KOPF__/__FUSS__ in
+// demo/index.html). Ein von Hand nachgebautes <header>/<footer> in
+// index.html könnte unbemerkt vom Markup des Moduls abweichen; ein
+// Platzhalter kann das nicht.
+const (
+	kopfPlatzhalter = "__KOPF__"
+	fussPlatzhalter = "__FUSS__"
+)
+
+// kopf liefert den Seitenkopf mit dem Namen der Anwendung. Anders als beim
+// Design-System selbst (dessen Kopf nur den eigenen Namen trägt) braucht
+// Expertus keine dienstspezifischen Angaben hier — die stehen im Fuß.
+func kopf() designsystem.KopfDaten {
+	return designsystem.KopfDaten{
+		Name:       "Expertus",
+		Untertitel: "EUNIS-Habitate im Feld bestimmen",
+	}
+}
+
+// fuss liefert die Fußzeilendaten. Expertus hat kein /docs und kein
+// /openapi.json wie die vier Go-Dienste, die das Design-System sonst
+// einbinden — es liest fremde Daten von dreien von ihnen. "Nach oben" ist
+// derselbe unauffällige Verweis wie in der Referenzseite des Moduls; die
+// Herkunftsangabe der Daten steht als eigener Absatz neben der Fußzeile in
+// index.html, weil FussDaten dafür kein Feld vorsieht (Verweise sind
+// Verweise, keine Fließtext-Zeile) — ein Verweis mit dem Herkunftstext als
+// Linktext und einem beliebigen Ziel wäre ein irreführender Link, keine
+// Angabe.
+func fuss(cfg Config) designsystem.FussDaten {
+	return designsystem.FussDaten{
+		Verweise: []designsystem.Verweis{
+			{Text: "Nach oben", Ziel: "#inhalt"},
+		},
+		Name:    "expertus",
+		Fassung: cfg.Fassung,
+	}
+}
+
+func index(w http.ResponseWriter, frontend fs.FS, cfg Config) {
 	daten, err := fs.ReadFile(frontend, "index.html")
 	if err != nil {
 		http.Error(w, "index.html fehlt", http.StatusInternalServerError)
 		return
 	}
+	daten = bytes.ReplaceAll(daten, []byte(kopfPlatzhalter), []byte(designsystem.Kopfzeile(kopf())))
+	daten = bytes.ReplaceAll(daten, []byte(fussPlatzhalter), []byte(designsystem.Fusszeile(fuss(cfg))))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	// Ohne Build gibt es keine Prüfsummen in Dateinamen — "immutable" wäre
 	// falsch, eine neue Fassung würde nie ankommen.
