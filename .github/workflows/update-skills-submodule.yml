@@ -1,0 +1,87 @@
+# Bump des third_party/claude-skills-Submoduls auf den neuesten Commit seines
+# verfolgten Branches, angelegt als PR. Das Gegenstück zum wöchentlichen
+# Dependabot-Update des gitsubmodule-Ökosystems (dependabot.yml) — hier
+# manuell aus dem Actions-Tab ("Run workflow") bzw. per
+# `gh workflow run update-skills-submodule.yml`, wenn man die neueste Fassung
+# der Skills nicht bis Montag abwarten will.
+#
+# Nur workflow_dispatch (kein Zeitplan), damit es niemals mit Dependabots PR
+# um denselben Bump wettläuft.
+#
+# claude-skills ist PRIVAT — anders als Ortus/Hostus, die dafür einen
+# klassischen PAT (secrets.RELEASE_PLEASE_TOKEN) verwenden, nutzt Expertus
+# dieselbe GitHub-App wie ci.yml und release-please.yml (Secrets
+# RELEASE_PLEASE_APP_CLIENT_ID/KEY): ein Installations-Token, ausdrücklich für
+# BEIDE Repositories angefordert. Das vermeidet einen zusätzlichen, von Hand
+# gepflegten PAT nur für diesen einen Anwendungsfall — dieselbe Begründung wie
+# in ci.yml, wo derselbe Kniff schon für den CI-Checkout des Submoduls steht.
+# Der Klon UND der Push der Bump-Branch brauchen dafür Contents: write; das
+# Anlegen des PR braucht zusätzlich Pull-Requests: write.
+name: Update skills submodule
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Installations-Token der App erzeugen
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            expertus
+            claude-skills
+          permission-contents: write
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Submodul auf den neuesten Stand des verfolgten Branches heben
+        id: bump
+        run: |
+          git submodule update --remote --recursive third_party/claude-skills
+          if git diff --quiet -- third_party/claude-skills; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "claude-skills ist bereits auf dem neuesten Commit — nichts zu tun."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "new=$(git -C third_party/claude-skills rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: PR öffnen
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          NEW: ${{ steps.bump.outputs.new }}
+        run: |
+          branch="chore/bump-claude-skills-${NEW}"
+          # Idempotent: existiert der Branch schon auf origin, ist dieser
+          # exakte Bump bereits vorgeschlagen — ein erneuter Lauf tut nichts,
+          # statt in einen Push-Konflikt bzw. doppelten PR zu laufen.
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "Branch $branch existiert bereits — Bump auf ${NEW} ist schon vorgeschlagen; nichts zu tun."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add third_party/claude-skills
+          git commit -m "chore(skills): claude-skills-Submodul auf ${NEW} anheben"
+          git push -u origin "$branch"
+          gh pr create \
+            --title "chore(skills): claude-skills-Submodul auf ${NEW} anheben" \
+            --body "On-demand-Bump des \`third_party/claude-skills\`-Submoduls auf den neuesten Stand von \`main\` (\`${NEW}\`), ausgelöst per workflow_dispatch. Das manuelle Gegenstück zum wöchentlichen Dependabot-Update des gitsubmodule-Ökosystems."
