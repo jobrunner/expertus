@@ -4,9 +4,9 @@ import { stubServices } from './helpers/stubs.js'
 async function fertigerPlot(page) {
   await page.goto('/#/plots')
   await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
-  await page.getByLabel('Breite').fill('52.52')
-  await page.getByLabel('Länge').fill('13.405')
-  await page.getByLabel('Länge').blur()
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
   await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca ovina')

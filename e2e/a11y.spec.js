@@ -22,9 +22,9 @@ test('die leere Liste ist barrierefrei', async ({ page }) => {
 test('die Maske mit Kopfdaten ist barrierefrei', async ({ page }) => {
   await page.goto('/#/plots')
   await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
-  await page.getByLabel('Breite').fill('52.52')
-  await page.getByLabel('Länge').fill('13.405')
-  await page.getByLabel('Länge').blur()
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
   await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
   await pruefe(page)
 })
@@ -42,9 +42,9 @@ test('die geöffnete Vorschlagsliste ist barrierefrei', async ({ page }) => {
 test('der geöffnete Auswertungsanhang ist barrierefrei', async ({ page }) => {
   await page.goto('/#/plots')
   await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
-  await page.getByLabel('Breite').fill('52.52')
-  await page.getByLabel('Länge').fill('13.405')
-  await page.getByLabel('Länge').blur()
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca ovina')
   await input.press('Enter')
@@ -74,5 +74,7 @@ test('der Fokus ist sichtbar und die Reihenfolge folgt der Lesereihenfolge', asy
     await page.keyboard.press('Tab')
     reihenfolge.push(await page.evaluate(() => document.activeElement?.id || document.activeElement?.textContent?.trim()))
   }
-  expect(reihenfolge.slice(0, 4)).toEqual(['Zum Inhalt springen', 'Plots', 'sample', 'breite'])
+  // Nach der Sample-ID kommt zuerst die Systemauswahl der Koordinaten-
+  // eingabe (Aufgabe 12), dann erst das Koordinatenfeld selbst.
+  expect(reihenfolge.slice(0, 4)).toEqual(['Zum Inhalt springen', 'Plots', 'sample', 'standort-system'])
 })

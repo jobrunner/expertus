@@ -9,6 +9,7 @@ const CONFIG = {
 
 const ORTUS_BERLIN = {
   coordinate: { srid: 4326, x: 13.405, y: 52.52 },
+  wgs84: { lon: 13.405, lat: 52.52 },
   gazetteer: { admin: { country_iso: 'DE' }, elevation: { meters: 36, source: { name: 'Copernicus DEM GLO-30' } } },
   results: [
     { source_id: 'ecoregions-2017', features: [{ layer: 'ecoregions', properties: { ECO_ID: 654, ECO_NAME: 'Central European mixed forests' } }] },

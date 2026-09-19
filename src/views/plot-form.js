@@ -8,6 +8,52 @@ import { originLabel } from '../format.js'
 import { CollisionError } from '../storage.js'
 import { hashFor } from '../router.js'
 import { standort as standortSymbol } from '/assets/icons.js'
+import { mountKoordinaten } from '/assets/designsystem.js'
+
+// Dieselben sieben Systeme wie bei Ortus, wortgleich aus dessen frontend.go
+// (sridConfig, siehe internal/adapters/http/frontend.go) übernommen: beide
+// Dienste sollen dieselben Bezeichnungen zeigen. Möglich ist die Auswahl nur,
+// weil Expertus die Koordinate an ortus schickt und ortus sie umrechnet
+// (Aufgabe 12) — Tempus kennt dagegen nur WGS 84 und zeigt deshalb gar keine
+// Auswahl (mountKoordinaten blendet sie bei einem einzigen System aus).
+const KOORDINATENSYSTEME = [
+  {
+    id: '4326', name: 'WGS 84',
+    xLabel: 'Längengrad (Lon)', yLabel: 'Breitengrad (Lat)',
+    xPlaceholder: 'z.B. 13.405', yPlaceholder: 'z.B. 52.52',
+    yZuerst: true,
+  },
+  {
+    id: '3857', name: 'Web Mercator',
+    xLabel: 'X (Meter)', yLabel: 'Y (Meter)',
+    xPlaceholder: 'z.B. 1492273', yPlaceholder: 'z.B. 6894026',
+  },
+  {
+    id: '25832', name: 'ETRS89 / UTM Zone 32N',
+    xLabel: 'Rechtswert (E)', yLabel: 'Hochwert (N)',
+    xPlaceholder: 'z.B. 389524', yPlaceholder: 'z.B. 5820270',
+  },
+  {
+    id: '25833', name: 'ETRS89 / UTM Zone 33N',
+    xLabel: 'Rechtswert (E)', yLabel: 'Hochwert (N)',
+    xPlaceholder: 'z.B. 389524', yPlaceholder: 'z.B. 5820270',
+  },
+  {
+    id: '31466', name: 'DHDN / Gauß-Krüger Zone 2',
+    xLabel: 'Rechtswert', yLabel: 'Hochwert',
+    xPlaceholder: 'z.B. 2597000', yPlaceholder: 'z.B. 5735000',
+  },
+  {
+    id: '31467', name: 'DHDN / Gauß-Krüger Zone 3',
+    xLabel: 'Rechtswert', yLabel: 'Hochwert',
+    xPlaceholder: 'z.B. 3597000', yPlaceholder: 'z.B. 5735000',
+  },
+  {
+    id: 'mgrs', name: 'MGRS (Military Grid Reference System)',
+    xLabel: 'MGRS', xPlaceholder: '32U NA 01234 56789',
+    einzelfeld: true,
+  },
+]
 
 // Welches Kopfdatum wie von Hand gesetzt wird. Text statt Auswahl nur dort,
 // wo es kein endliches Vokabular gibt.
@@ -94,14 +140,60 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   }
 
   function standort(plot) {
-    const breite = el('input', {
-      id: 'breite', type: 'text', inputmode: 'decimal', value: plot.coordinate?.lat ?? '',
-      onBlur: uebernehmen, onPaste: paste,
+    // Das Gerüst, an das mountKoordinaten bindet (siehe die Kennungen in
+    // js/koordinaten.js des Design-Systems): eine optionale Systemauswahl,
+    // ein Gitter mit den Feldern für x/y sowie ein einzelnes Textfeld für
+    // MGRS. Beschriftungen und Platzhalter trägt das Modul selbst ein —
+    // hier bleiben die Label-Texte deshalb leer.
+    const idPrefix = 'standort'
+    const auswahl = el('select', { id: `${idPrefix}-system` })
+    const feldX = el('input', { id: `${idPrefix}-x`, type: 'text', inputmode: 'decimal' })
+    const feldY = el('input', { id: `${idPrefix}-y`, type: 'text', inputmode: 'decimal' })
+    const feldEinzel = el('input', { id: `${idPrefix}-einzel`, type: 'text', autocomplete: 'off' })
+    const gitter = el('div', { class: 'koord-gitter' }, [feld('', feldX), feld('', feldY)])
+    const container = el('div', {}, [
+      feld('Koordinatensystem', auswahl),
+      gitter,
+      feld('', feldEinzel),
+    ])
+
+    // Was zuletzt aus der Bedienform kam — onChange läuft bei jedem
+    // Tastendruck, aber übernommen wird erst beim Verlassen des Felds (wie
+    // bisher bei Breite/Länge): eine Aktion pro Zeichen würde die Maske bei
+    // jedem Tastendruck neu zeichnen.
+    let letzte = { system: KOORDINATENSYSTEME[0].id, x: '', y: '', text: '' }
+    mountKoordinaten({
+      container,
+      systeme: KOORDINATENSYSTEME,
+      idPrefix,
+      onChange: (payload) => { letzte = payload },
     })
-    const laenge = el('input', {
-      id: 'laenge', type: 'text', inputmode: 'decimal', value: plot.coordinate?.lon ?? '',
-      onBlur: uebernehmen, onPaste: paste,
-    })
+
+    // Ein bereits gespeicherter Plot zeigt seine zuletzt eingegebenen
+    // Rohwerte im richtigen System, statt immer bei WGS 84 leer zu starten.
+    // auswahl.value setzen und ein change-Ereignis auslösen übernimmt
+    // Beschriftung, Feldreihenfolge und das Freimachen der Felder — genau
+    // wie beim GPS-Knopf unten und wie bei Ortus selbst.
+    if (plot.coordInput) {
+      const { system, x, y, text } = plot.coordInput
+      auswahl.value = system
+      auswahl.dispatchEvent(new Event('change'))
+      if (system === 'mgrs') feldEinzel.value = text ?? ''
+      else {
+        feldX.value = x ?? ''
+        feldY.value = y ?? ''
+      }
+      letzte = { system, x: feldX.value, y: feldY.value, text: feldEinzel.value }
+    }
+
+    function uebernehmen() {
+      actions.setCoordinateInput({ ...letzte, source: 'manual' })
+      actions.fetchHeader()
+    }
+    feldX.addEventListener('blur', uebernehmen)
+    feldY.addEventListener('blur', uebernehmen)
+    feldEinzel.addEventListener('blur', uebernehmen)
+
     const sample = el('input', {
       id: 'sample', type: 'text', value: plot.sampleId,
       onBlur: (e) => {
@@ -111,25 +203,6 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
         }
       },
     })
-
-    function uebernehmen() {
-      const lat = Number.parseFloat(String(breite.value).replace(',', '.'))
-      const lon = Number.parseFloat(String(laenge.value).replace(',', '.'))
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
-      actions.setCoordinate({ lat, lon, source: 'manual' })
-      actions.fetchHeader()
-    }
-
-    // Aus der ortus-Testkonsole: ein eingefügtes Paar füllt beide Felder.
-    function paste(e) {
-      const text = e.clipboardData?.getData('text/plain') ?? ''
-      const paar = text.split(/[,;\s]+/).map((s) => Number.parseFloat(s.replace(',', '.'))).filter(Number.isFinite)
-      if (paar.length !== 2) return
-      e.preventDefault()
-      breite.value = String(paar[0])
-      laenge.value = String(paar[1])
-      uebernehmen()
-    }
 
     // Verweigerte Berechtigung, abgelaufene Zeitgrenze, kein Empfang: ohne
     // sichtbare Meldung passiert beim Druck auf den GPS-Knopf scheinbar
@@ -155,11 +228,19 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
         gps.disabled = true
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            breite.value = pos.coords.latitude.toFixed(6)
-            laenge.value = pos.coords.longitude.toFixed(6)
             gps.disabled = false
+            // Der GPS-Knopf liefert immer WGS 84 — die Bedienform muss
+            // deshalb auf dieses System umgestellt werden, sonst stünden
+            // Gradwerte unter der Beschriftung eines anderen Systems.
+            // Ortus macht das an derselben Stelle genauso (sridSelect.value
+            // = '4326' in dessen frontend.go).
+            auswahl.value = '4326'
+            auswahl.dispatchEvent(new Event('change'))
+            feldY.value = pos.coords.latitude.toFixed(6)
+            feldX.value = pos.coords.longitude.toFixed(6)
+            letzte = { system: '4326', x: feldX.value, y: feldY.value, text: '' }
             actions.setCoordinate({
-              lat: Number(breite.value), lon: Number(laenge.value),
+              lat: Number(feldY.value), lon: Number(feldX.value),
               source: 'gps', accuracyM: Math.round(pos.coords.accuracy),
             })
             actions.fetchHeader()
@@ -180,8 +261,7 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     return el('section', { class: 'card', 'aria-labelledby': 'h-standort' }, [
       el('h3', { id: 'h-standort', text: 'Standort' }),
       feld('Sample-ID', sample),
-      feld('Breite', breite),
-      feld('Länge', laenge),
+      container,
       gps,
       // Im Gelände entscheidet der Unterschied zwischen 8 m und 800 m —
       // der Browser verschweigt ihn sonst, deshalb wird er hier angezeigt.
