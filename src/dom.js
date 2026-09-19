@@ -60,7 +60,8 @@ export function announce(liveRegion, text) {
 // noch nicht abgeschickten Text kommentarlos verwerfen. Der Wert des
 // fokussierten Felds wird deshalb — wie schon der Fokus selbst — mit
 // hinübergenommen, sofern der frische Aufbau dort selbst nichts einträgt.
-// Wer ein Feld absichtlich leert (siehe combobox.js, uebernehmen()), tut
+// Wer ein Feld absichtlich leert (siehe die Combobox des Design-Systems,
+// js/combobox.js, uebernehmen()), tut
 // das deshalb VOR der auslösenden Aktion, nicht danach: sonst würde genau
 // dieser Ausgleich den gelöschten Text hier wiederherstellen.
 export function preserveFocus(container, render) {

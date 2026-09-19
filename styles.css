@@ -4,12 +4,11 @@
 
 /* Mindestens 24x24 CSS-Pixel Zielfläche (WCAG 2.2 SC 2.5.8). Das
    Design-System deckt das schon für Eingabefelder ab (input, select,
-   textarea) und für seine eigene .btn-Klasse; Expertus baut seine Knöpfe
-   und die Vorschlagseinträge der Artensuche aber noch ohne diese Klasse
-   (siehe combobox.js, plot-list.js, plot-form.js, result.js), deshalb
-   bleibt hier eine eigene Regel für beide. */
-button,
-.option {
+   textarea), für seine eigene .btn-Klasse und für die Vorschlagseinträge
+   der Combobox (.combobox-liste .option); Expertus baut seine übrigen
+   Knöpfe aber noch ohne .btn (siehe plot-list.js, plot-form.js,
+   result.js), deshalb bleibt hier eine eigene Regel dafür. */
+button {
   min-height: 2.75rem;
   font: inherit;
 }
@@ -34,21 +33,6 @@ button,
 .warn {
   color: var(--warning);
   font-weight: 600;
-}
-
-/* Vorschlagsliste der Artensuche (role="listbox"). Das Design-System
-   stylt nur seine eigene .combobox-liste; Expertus' combobox.js baut die
-   Liste noch unter einer eigenen Klasse auf (Umstellung: Aufgabe 11). */
-.listbox {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--control-line);
-}
-
-.option[aria-selected='true'] {
-  color: var(--accent-on);
-  background: var(--accent);
 }
 
 /* Kein Text in Bildern, keine festen Höhen: bei 200 % Textgröße darf

@@ -1,21 +1,31 @@
-// Der Artenabschnitt der Maske: Vorschlagssuche (ARIA-Combobox über
-// combobox.js) und die erfasste Liste mit Deckung je Skala.
+// Der Artenabschnitt der Maske: Vorschlagssuche (ARIA-Combobox über die
+// des Design-Systems, siehe /assets/designsystem.js) und die erfasste
+// Liste mit Deckung je Skala.
 import { el } from '../dom.js'
 import { classesFor, SCALES } from '../cover.js'
 import { formatCover } from '../format.js'
-import { mountCombobox } from './combobox.js'
+import { mountCombobox } from '/assets/designsystem.js'
 
 export function renderSpeciesSection({ plot, actions, hostus }) {
   const input = el('input', {
     id: 'art-suche', type: 'text', role: 'combobox', autocomplete: 'off',
     'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': 'art-liste',
   })
-  const listbox = el('ul', { id: 'art-liste', role: 'listbox', class: 'listbox', hidden: true })
+  const listbox = el('ul', { id: 'art-liste', role: 'listbox', class: 'combobox-liste', hidden: true })
   const hinweis = el('p', { class: 'muted' })
 
   const combobox = mountCombobox({
-    input, listbox, hostus,
-    onPick: (o) => actions.addSpecies({ name: o.name, conceptId: o.conceptId ?? null, entry: o.conceptId ? 'suggest' : 'manual' }),
+    input, listbox,
+    // idPrefix bleibt "expertus-option-", wie zuvor in combobox-state.js:
+    // e2e/species.spec.js prüft aria-activedescendant gegen genau diese
+    // Kennung.
+    idPrefix: 'expertus-option-',
+    // Das Modul kennt nur id, text und einen optionalen hinweis — die
+    // Fachlichkeit (EuroSL ja/nein) wird hier auf diese drei Felder
+    // abgebildet, in beide Richtungen.
+    suggest: async (q, opts) => (await hostus.suggest(q, opts))
+      .map((o) => ({ id: o.conceptId, text: o.name, hinweis: o.isEuroSl ? null : 'nicht Euro+Med' })),
+    onPick: (o) => actions.addSpecies({ name: o.text, conceptId: o.id ?? null, entry: o.id ? 'suggest' : 'manual' }),
     // Fällt hostus aus, blockiert das die Erfassung nicht: der Name bleibt
     // von Hand eingebbar, nur der Hinweis erscheint.
     onError: () => { hinweis.textContent = 'Vorschläge nicht verfügbar — Name von Hand eingeben.' },
@@ -30,8 +40,7 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
       el('select', { id: 'skala', onChange: (e) => actions.setScale(e.target.value) },
         Object.entries(SCALES).map(([k, v]) => el('option', { value: k, text: v.label, selected: k === plot.scale }))),
     ]),
-    el('p', {}, [el('label', { for: 'art-suche', text: 'Art suchen' }), input]),
-    listbox,
+    el('div', { class: 'form-group combobox' }, [el('label', { for: 'art-suche', text: 'Art suchen' }), input, listbox]),
     hinweis,
     // Mehrfachnennung wird gewarnt, nicht zusammengeführt: habitatus
     // vereinigt Deckungen nach eigenem Verfahren (Jennings-Fischer), eine
