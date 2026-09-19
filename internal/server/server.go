@@ -32,6 +32,7 @@ type Config struct {
 // übergebenes fs.FS macht die Tests unabhängig von der Einbettung.
 func New(cfg Config, frontend fs.FS) http.Handler {
 	mux := http.NewServeMux()
+	mux.Handle("/config.json", sicherheitsHeader(cfg, configHandler(cfg)))
 	mux.Handle("/", sicherheitsHeader(cfg, frontendHandler(frontend)))
 	return mux
 }
