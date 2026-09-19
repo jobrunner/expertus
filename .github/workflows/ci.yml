@@ -8,9 +8,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Das Skill-Submodul liegt in einem PRIVATEN Repository. Der voreingestellte
-      # GITHUB_TOKEN gilt nur für dieses hier, weshalb checkout das Submodul mit
-      # "not found" abbrach — GitHub meldet fehlenden Zugriff als 404, nicht als
+      # Das Skill-Submodul liegt in einem PRIVATEN Repository und wird NUR für
+      # den a11y-grep-Schritt ganz unten gebraucht — Go-Tests, gofmt und
+      # `make test` kommen ohne es aus. Der Checkout selbst holt das Submodul
+      # deshalb hier nicht mehr mit (submodules: false s. u.); es wird erst
+      # gezielt nachgeladen, WENN ein Token verfügbar ist.
+      #
+      # Der voreingestellte GITHUB_TOKEN gilt nur für DIESES Repository,
+      # weshalb ein Submodul-Checkout des privaten claude-skills mit "not
+      # found" abbräche — GitHub meldet fehlenden Zugriff als 404, nicht als
       # 403. Die SSH-URL aus .gitmodules hilft nicht: der Runner hat keinen
       # Schlüssel, checkout bildet SSH ohnehin auf HTTPS mit Token ab.
       #
@@ -19,11 +25,18 @@ jobs:
       # der Klon scheitert weiter. Mehr als Contents: read braucht der Klon
       # nicht.
       #
-      # Ein Lauf ohne Zugriff auf die Secrets (Pull Request aus einem Fork)
-      # bekommt kein Token und scheitert hier; für dieses Repository gibt es
-      # diesen Fall nicht.
-      - name: Installations-Token der App erzeugen
+      # continue-on-error: GitHub gibt einem von Dependabot ausgelösten Lauf
+      # aus Sicherheitsgründen KEINEN Zugriff auf Repository-Secrets (auch
+      # nicht bei einem pull_request-Trigger im eigenen Repository, nicht nur
+      # bei Forks) — client-id/private-key sind dann leer, und dieser Schritt
+      # schlägt fehl. Früher stand hier die Behauptung, dieser Fall beträfe
+      # nur PRs aus Forks und käme hier nicht vor; das stimmt seit Dependabot
+      # läuft nicht mehr. Ohne continue-on-error risse der fehlende Token den
+      # kompletten Job mit herunter, obwohl nur EIN Schritt (a11y-grep) ihn
+      # wirklich braucht.
+      - name: Installations-Token der App erzeugen (falls Secrets verfügbar)
         id: app-token
+        continue-on-error: true
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
@@ -36,8 +49,22 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          submodules: true   # der A11y-Skill hängt als Submodul darin
-          token: ${{ steps.app-token.outputs.token }}
+          submodules: false  # das Submodul wird gezielt im nächsten Schritt geladen
+
+      # Nur wenn der Token oben tatsächlich entstanden ist. `git submodule
+      # update --init` statt eines erneuten vollständigen Checkouts, damit
+      # der bereits ausgecheckte Hauptbaum erhalten bleibt.
+      - name: Skill-Submodul laden (falls Token verfügbar)
+        id: submodule
+        if: steps.app-token.outcome == 'success'
+        env:
+          TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config submodule.third_party/claude-skills.url \
+            "https://x-access-token:${TOKEN}@github.com/jobrunner/claude-skills.git"
+          git submodule update --init
+          echo "loaded=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -54,41 +81,26 @@ jobs:
       - run: make test
       # Layer 1 des A11y-Harness braucht ripgrep und kein Netz.
       - run: sudo apt-get install -y ripgrep
-      - run: .claude/skills/web-accessibility-audit/scripts/a11y-grep.sh --all . --strict
+      - name: A11y-Grep (Layer 1)
+        if: steps.submodule.outputs.loaded == 'true'
+        run: .claude/skills/web-accessibility-audit/scripts/a11y-grep.sh --all . --strict
+      # Sichtbarer Hinweis statt eines stillschweigend grünen, aber
+      # übersprungenen Schritts: wer das Protokoll überfliegt, soll sehen,
+      # dass diese Prüfung NICHT gelaufen ist, nicht bestanden hat.
+      - name: Hinweis, falls A11y-Grep übersprungen wurde
+        if: steps.submodule.outputs.loaded != 'true'
+        run: echo "::warning::A11y-Grep (Layer 1) wurde NICHT ausgeführt — das private Skill-Submodul third_party/claude-skills war nicht erreichbar (kein Secret-Zugriff in diesem Lauf, z. B. bei einem von Dependabot ausgelösten PR). Das ist kein bestandener Lauf dieser Prüfung, sondern ihr Ausfall."
 
   browser:
     runs-on: ubuntu-latest
     steps:
-      # Das Skill-Submodul liegt in einem PRIVATEN Repository. Der voreingestellte
-      # GITHUB_TOKEN gilt nur für dieses hier, weshalb checkout das Submodul mit
-      # "not found" abbrach — GitHub meldet fehlenden Zugriff als 404, nicht als
-      # 403. Die SSH-URL aus .gitmodules hilft nicht: der Runner hat keinen
-      # Schlüssel, checkout bildet SSH ohnehin auf HTTPS mit Token ab.
-      #
-      # Deshalb ein Installations-Token der Release-App, ausdrücklich für BEIDE
-      # Repositories — ein App-Token ist sonst auf dieses eine beschränkt und
-      # der Klon scheitert weiter. Mehr als Contents: read braucht der Klon
-      # nicht.
-      #
-      # Ein Lauf ohne Zugriff auf die Secrets (Pull Request aus einem Fork)
-      # bekommt kein Token und scheitert hier; für dieses Repository gibt es
-      # diesen Fall nicht.
-      - name: Installations-Token der App erzeugen
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ secrets.RELEASE_PLEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: |
-            expertus
-            claude-skills
-          permission-contents: read
-
+      # Anders als der test-Job braucht dieser hier das private Skill-
+      # Submodul GAR NICHT — `make e2e` ruft nur Playwright gegen e2e/ auf,
+      # nichts davon liest third_party/claude-skills. Ein einfacher Checkout
+      # ohne Submodule genügt deshalb und braucht keinen App-Token; das hielt
+      # diesen Job früher unnötig von Dependabot-PRs abhängig, obwohl er das
+      # Submodul nie verwendet hat.
       - uses: actions/checkout@v4
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
