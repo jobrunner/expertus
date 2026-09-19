@@ -11,7 +11,13 @@ export function resultLabel(result) {
 }
 
 export const statusLabel = (status) => STATUS[status] ?? status
-export const originLabel = (origin) => ORIGIN[origin] ?? origin
+// Der Zustandswert 'missing' trägt zwei verschiedene Bedeutungen: vor dem
+// ersten Abruf wurde nur noch nicht gefragt, danach konnte das Feld nicht
+// abgeleitet werden. Der Wert selbst bleibt gleich — er sperrt die
+// Auswertung (siehe missingFields in header-map.js) und darf sich nicht
+// ändern, nur weil die Maske ihn anders benennen will.
+export const originLabel = (origin, abgefragt = true) =>
+  origin === 'missing' && !abgefragt ? 'noch nicht abgefragt' : (ORIGIN[origin] ?? origin)
 
 // Kein toLocaleDateString: dessen Ausgabe hängt von der Umgebung ab, und
 // die Liste soll überall gleich aussehen. Der Index hält einen ISO-Stempel;

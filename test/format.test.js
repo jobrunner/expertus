@@ -36,3 +36,20 @@ test('die Deckung zeigt Klasse und Prozent, wenn beides da ist', () => {
   assert.equal(formatCover({ cover: 24.65, coverClass: null }), '24,65 %')
   assert.equal(formatCover({ cover: null, coverClass: null }), 'ohne Deckung')
 })
+
+test('vor dem ersten Abruf heißt ein fehlendes Kopfdatum "noch nicht abgefragt"', () => {
+  // Vor dem ersten Abruf ist nichts fehlgeschlagen — es wurde nur noch
+  // nicht gefragt. "nicht ableitbar" behauptete ein Ergebnis, das es nicht
+  // gibt, und färbte die halbe Maske in Warnfarbe.
+  assert.equal(originLabel('missing', false), 'noch nicht abgefragt')
+  assert.equal(originLabel('missing', true), 'nicht ableitbar')
+})
+
+test('die übrigen Herkunftstexte hängen nicht am Abruf', () => {
+  assert.equal(originLabel('ortus', false), 'aus ortus')
+  assert.equal(originLabel('manual', false), 'von Hand gesetzt')
+})
+
+test('originLabel bleibt ohne zweites Argument rückwärtskompatibel', () => {
+  assert.equal(originLabel('missing'), 'nicht ableitbar')
+})

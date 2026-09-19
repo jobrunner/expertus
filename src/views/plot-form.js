@@ -204,6 +204,9 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
 
   function zeile(plot, field) {
     const origin = plot.headerOrigin?.[field] ?? 'missing'
+    // Ohne Koordinate kann ortus nie gefragt worden sein: dann ist nichts
+    // fehlgeschlagen und die Warnfarbe wäre eine Behauptung.
+    const abgefragt = plot.coordinate != null
     const value = plot.header?.[field]
     const spec = MANUAL_INPUT[field]
     const id = `h-${field.replace(/[^A-Za-z0-9_-]/g, '-')}`
@@ -231,7 +234,10 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     return el('tr', {}, [
       el('th', { scope: 'row' }, el('label', { for: control.id, text: field })),
       el('td', {}, [control, beleg(plot, field)]),
-      el('td', { class: origin === 'missing' ? 'warn' : 'muted', text: originLabel(origin) }),
+      el('td', {
+        class: origin === 'missing' && abgefragt ? 'warn' : 'muted',
+        text: originLabel(origin, abgefragt),
+      }),
     ])
   }
 
