@@ -28,8 +28,8 @@ type Config struct {
 }
 
 // New baut den Router. Das Dateisystem wird übergeben, nicht hier geholt:
-// go:embed kann nur unterhalb des eigenen Pakets einbetten, und ein
-// übergebenes fs.FS macht die Tests unabhängig von der Einbettung.
+// die Direktive go:embed kann nur unterhalb des eigenen Pakets einbetten,
+// und ein übergebenes fs.FS macht die Tests unabhängig von der Einbettung.
 func New(cfg Config, frontend fs.FS) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/config.json", sicherheitsHeader(cfg, configHandler(cfg)))
