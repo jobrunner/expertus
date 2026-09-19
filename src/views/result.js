@@ -10,6 +10,12 @@ export function renderResultSection({ plot, actions, store }) {
   const ev = plot.evaluation
   const { evaluating } = store.get()
 
+  // Der Grund für die Sperre gehört an den Knopf, nicht nur unter ihn: eine
+  // lose Textzeile darunter wird beim Ansteuern des Knopfes nicht
+  // vorgelesen, und wer nicht sieht, erfährt nie, was noch fehlt.
+  const hinweisId = 'auswerten-grund'
+  const hinweis = grund ? el('p', { id: hinweisId, class: 'muted', text: grund }) : null
+
   const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
     el('h3', { id: 'h-ausw', text: 'Auswertung' }),
     el('button', {
@@ -17,9 +23,10 @@ export function renderResultSection({ plot, actions, store }) {
       class: 'btn',
       text: evaluating ? 'Wird ausgewertet …' : 'Auswerten',
       disabled: Boolean(grund) || evaluating,
+      'aria-describedby': hinweis ? hinweisId : null,
       onClick: () => actions.evaluate(),
     }),
-    grund ? el('p', { class: 'muted', text: grund }) : null,
+    hinweis,
     ergebnis(ev, actions),
     ev?.status === 'ok' || ev?.status === 'stale' ? anhang(ev) : null,
   ])

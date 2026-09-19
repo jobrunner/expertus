@@ -131,3 +131,18 @@ test('ein Dienstfehler bietet einen zweiten Versuch an', async ({ page }) => {
   await page.getByRole('button', { name: 'Auswerten' }).click()
   await expect(page.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible()
 })
+
+test('der gesperrte Auswerten-Knopf nennt seinen Grund zugänglich', async ({ page }) => {
+  await page.goto('/index.html')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+
+  const knopf = page.getByRole('button', { name: 'Auswerten' })
+  await expect(knopf).toBeDisabled()
+
+  // Ein gesperrter Knopf mit einer losen Textzeile darunter verbindet
+  // beide nicht: wer nicht sieht, hört den Grund nie. aria-describedby
+  // stellt die Verbindung her.
+  const id = await knopf.getAttribute('aria-describedby')
+  expect(id).toBeTruthy()
+  await expect(page.locator(`#${id}`)).toContainText('Kopfdaten fehlen')
+})
