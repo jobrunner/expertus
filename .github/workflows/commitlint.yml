@@ -1,0 +1,33 @@
+# Prüft, dass die Commits eines PR den Conventional Commits folgen.
+#
+# Das schützt die Release-Automatisierung: release-please (release-please.yml)
+# leitet die nächste Version + package.json-Aktualisierung aus den Commit-
+# Typen ab. Ein nicht-konventioneller Commit würde falsch eingeordnet (oder
+# übersprungen), deshalb wird das schon beim PR geprüft.
+#
+# Konfiguration liegt in .commitlintrc.yml. Nutzt `pull_request` (Lese-Token,
+# eigener Kontext des PR) — es liest nur Commit-Nachrichten, führt niemals
+# PR-Code aus.
+name: Commit Lint
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Volle Historie, damit die Action jeden Commit im PR-Bereich prüfen kann.
+          fetch-depth: 0
+      - name: PR-Commits prüfen
+        uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: .commitlintrc.yml

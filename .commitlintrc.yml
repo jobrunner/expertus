@@ -1,0 +1,22 @@
+# Prüfung auf Conventional Commits. Wichtig für release-please: es leitet die
+# nächste Version + das CHANGELOG aus diesen Commit-Typen ab (feat → minor,
+# fix → patch, `!`/BREAKING CHANGE → major). Ein nicht-konventioneller Commit
+# würde falsch eingeordnet.
+extends:
+  - '@commitlint/config-conventional'
+rules:
+  # Repo-Commits tragen gelegentlich Kopf + Klammerzusatz (z. B. bereits
+  # gesehen: "feat: Koordinateneingabe aus dem Design-System mit allen sieben
+  # Systemen"); etwas Spielraum lassen.
+  header-max-length: [2, always, 120]
+  # Die Typen, die dieses Repository tatsächlich benutzt.
+  type-enum:
+    - 2
+    - always
+    - [build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test]
+  # Warnung statt Fehler: Dependabots automatisch erzeugte Commit-Rümpfe
+  # überschreiten routinemäßig 100 Zeichen pro Zeile, was sonst jeden sicheren
+  # Abhängigkeits-PR an der Pflichtprüfung scheitern ließe. Die Zeilenlänge im
+  # Rumpf ist kosmetisch — release-please leitet Versionen aus Typ/Kopf ab,
+  # nicht aus dem Rumpf.
+  body-max-line-length: [1, always, 100]
