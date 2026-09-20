@@ -31,3 +31,29 @@ jobs:
         uses: wagoid/commitlint-github-action@v6
         with:
           configFile: .commitlintrc.yml
+
+      # GitHub schreibt den Titel eines Pull Requests als Rumpf in den
+      # Merge-Commit, und release-please liest auch Rümpfe. Ein Titel im
+      # Conventional-Commit-Format erscheint dadurch zweimal im Changelog —
+      # einmal für den Commit, einmal für den Merge-Commit. Keine der von
+      # GitHub erlaubten Kombinationen aus Merge-Betreff und -Rumpf verhindert
+      # das, also muss der Titel selbst frei davon bleiben.
+      #
+      # Bots sind ausgenommen: release-please betitelt seinen eigenen Pull
+      # Request mit "chore(main): release X.Y.Z" und Dependabot mit
+      # "chore(deps): …". Beides ist gewollt und landet nicht doppelt im
+      # Changelog, weil chore dort ohnehin nicht erscheint.
+      - name: PR-Titel darf kein Conventional Commit sein
+        if: github.event.pull_request.user.type != 'Bot'
+        env:
+          TITEL: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s' "$TITEL" | grep -qE '^[a-z]+(\([^)]+\))?!?: '; then
+            echo "::error::Der PR-Titel ist ein Conventional Commit: $TITEL"
+            echo "Er landet als Rumpf im Merge-Commit und erscheint doppelt im Changelog."
+            echo "Bitte in normaler Sprache formulieren, etwa:"
+            echo "  Keep focus in the plot list search field"
+            echo "Die Commits selbst bleiben unverändert im Conventional-Commit-Format."
+            exit 1
+          fi
+          echo "PR-Titel ist unbedenklich: $TITEL"

@@ -33,6 +33,36 @@ release-please leitet daraus die nächste Fassung ab: `feat` ergibt einen
 Minor-, `fix` einen Patch-Sprung, `!` oder `BREAKING CHANGE` einen Major-
 Sprung. Ein Commit mit falschem Typ verschiebt die Fassungsnummer.
 
+## Pull Requests zusammenführen
+
+Vor dem Zusammenführen auf `origin/main` rebasen, dann mit **Merge-Commit**
+zusammenführen — nicht squashen. Der Rebase hält die Historie geradlinig, der
+Merge-Commit hält sichtbar, welche Commits zu welchem Pull Request gehörten.
+Ein Squash wirft beides zusammen: Beim Umbau in #6 verschwand dabei ein
+`fix(ratchet):` unter einer `refactor:`-Betreffzeile, und release-please sah
+nichts zu veröffentlichen — kein Release, kein Tag, kein Container-Image.
+
+**Der Titel eines Pull Requests darf kein Conventional Commit sein.**
+
+GitHub schreibt ihn als Rumpf in den Merge-Commit, und release-please liest
+auch Rümpfe. Ein Titel wie `fix(plot-list): keep focus …` erscheint dann
+zweimal im Changelog — einmal für den Commit, einmal für den Merge-Commit.
+Die drei von GitHub erlaubten Kombinationen aus Merge-Betreff und -Rumpf
+führen alle dorthin, sobald der Titel ein Conventional Commit ist; die
+Einstellung ist also kein Ausweg.
+
+Titel deshalb in normaler Sprache schreiben:
+
+    ✅ Keep focus in the plot list search field
+    ❌ fix(plot-list): keep focus in the search field while typing
+
+`commitlint` prüft ausschließlich die Commits eines Pull Requests, nie
+dessen Titel — die Prüfungen stehen dem also nicht entgegen.
+
+Beim Zusammenführen über die Kommandozeile zusätzlich den Rumpf leeren:
+
+    gh pr merge <N> --merge --delete-branch --body ""
+
 ## Prüfungen vor einem Pull Request
 
     make check        # Go-Tests, JS-Tests, Barrierefreiheit
