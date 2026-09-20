@@ -159,3 +159,23 @@ async function seed(page, plots) {
     localStorage.setItem('expertus.index', JSON.stringify(index))
   }, plots)
 }
+
+// Der Fehler, der diesen Test nötig gemacht hat: das Suchfeld verlor nach
+// dem ersten Zeichen den Fokus, weil jedes input-Ereignis die gesamte
+// Ansicht neu zeichnete und das Feld dabei aus dem DOM nahm. Mit fill()
+// war das nicht zu sehen — das setzt den Wert in einem Zug und löst nur ein
+// einziges Ereignis aus. Nachgestellt wird deshalb zeichenweises Tippen.
+test('im Suchfeld lässt sich zeichenweise tippen, ohne den Fokus zu verlieren', async ({ page }) => {
+  await seed(page, [
+    { sampleId: 'Sylt-03', result: 'R1A', status: 'ok', species: ['Ammophila arenaria'] },
+    { sampleId: 'Berlin-01', result: null, status: 'none', species: ['Festuca ovina'] },
+  ])
+  await page.goto('/#/plots')
+  const suche = page.getByLabel('Suche')
+  await suche.click()
+  await suche.pressSequentially('ammophila', { delay: 30 })
+
+  await expect(suche).toHaveValue('ammophila')
+  await expect(suche).toBeFocused()
+  await expect(page.getByRole('row')).toHaveCount(2)
+})
