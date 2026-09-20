@@ -47,7 +47,7 @@ jobs:
             claude-skills
           permission-contents: read
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: false  # das Submodul wird gezielt im nächsten Schritt geladen
 
@@ -65,10 +65,10 @@ jobs:
           git submodule update --init
           echo "loaded=true" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Go-Tests
@@ -100,11 +100,11 @@ jobs:
       # ohne Submodule genügt deshalb und braucht keinen App-Token; das hielt
       # diesen Job früher unnötig von Dependabot-PRs abhängig, obwohl er das
       # Submodul nie verwendet hat.
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: npm ci
@@ -121,13 +121,13 @@ jobs:
   container:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: make docker-test
 
   docker-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
         with:
           dockerfile: Dockerfile
@@ -138,7 +138,7 @@ jobs:
   actions-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # -shellcheck erwartet den PFAD ZUR AUSFÜHRBAREN DATEI, keine
       # shellcheck-Optionen: steht dort etwas anderes, überspringt actionlint
       # shellcheck stillschweigend und der Job meldet Erfolg, obwohl er nur
