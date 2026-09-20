@@ -19,9 +19,12 @@ const HABITATUS = process.env.HABITATUS_BASE_URL ?? 'https://habitatus.fieldwork
 // eine Umbenennung in ortus (etwa des Ökoregion-Namens) bräche sie sonst
 // unbemerkt, weil die sieben Kopfdaten davon unberührt blieben.
 const PUNKTE = [
-  { name: 'Berlin', lat: 52.52, lon: 13.405, erwarteVollstaendig: true, erwarteBelege: ['ecoName', 'elevationSource'] },
-  { name: 'Sylt', lat: 54.9, lon: 8.31, erwarteVollstaendig: true, erwarteBelege: ['seaRegion', 'ecoName', 'elevationSource'] },
-  { name: 'Ostsee/Darß', lat: 54.45, lon: 12.45, erwarteVollstaendig: false, erwarteFehlend: ['Ecoreg'] },
+  { name: 'Berlin', lat: 52.52, lon: 13.405, erwarteVollstaendig: true, erwarteBelege: ['ecoName', 'elevationSource'], erwarteRegion: 'GER' },
+  { name: 'Sylt', lat: 54.9, lon: 8.31, erwarteVollstaendig: true, erwarteBelege: ['seaRegion', 'ecoName', 'elevationSource'], erwarteRegion: 'GER' },
+  // Auf See gibt es keine botanische Region: WGSRPD deckt Landflächen ab.
+  // Die Artensuche fragt dann ohne Gebietsbezug — das ist kein Fehler,
+  // sondern der Fall, für den area optional bleibt.
+  { name: 'Ostsee/Darß', lat: 54.45, lon: 12.45, erwarteVollstaendig: false, erwarteFehlend: ['Ecoreg'], erwarteRegion: null },
 ]
 
 let fehler = 0
@@ -35,12 +38,14 @@ let kopf = null
 
 for (const p of PUNKTE) {
   try {
-    const { header, origin, evidence } = await ortus.lookup({ lat: p.lat, lon: p.lon })
+    const { header, origin, evidence, tdwgRegion } = await ortus.lookup({ system: '4326', x: p.lon, y: p.lat })
     const fehlend = missingFields(origin)
     for (const beleg of p.erwarteBelege ?? []) {
       const wert = evidence?.[beleg]
       melde(Boolean(wert), `ortus ${p.name}: Beleg ${beleg} belegt (${wert || 'leer'})`)
     }
+    melde((tdwgRegion ?? null) === p.erwarteRegion,
+      `ortus ${p.name}: TDWG-Region ${p.erwarteRegion ?? 'keine'} erwartet, geliefert ${tdwgRegion ?? 'keine'}`)
     if (p.erwarteVollstaendig) {
       melde(fehlend.length === 0, `ortus ${p.name}: alle ${HEADER_FIELDS.length} Kopfdaten (fehlend: ${fehlend.join(', ') || 'keine'})`)
       kopf ??= header
@@ -54,14 +59,17 @@ for (const p of PUNKTE) {
 }
 
 try {
-  const treffer = await createHostus({ baseUrl: HOSTUS }).suggest('Festuca ovina', { limit: 20 })
-  melde(treffer.length > 0, `hostus: ${treffer.length} Vorschläge, davon ${treffer.filter((t) => t.isEuroSl).length} aus EuroSL`)
-  if (treffer.length && treffer.every((t) => !t.isEuroSl)) {
-    // Kein Fehler, sondern die Annahme hinter der Vorzugsregel: hostus
-    // stellt EuroSL-Treffer nach vorn, garantiert sie aber nicht. Ein
-    // harter Filter auf EuroSL würde die Liste hier leeren.
-    console.log('  Hinweis: kein EuroSL-Treffer — die Vorzugsregel greift, ein Filter würde die Liste leeren.')
-  }
+  const hostus = createHostus({ baseUrl: HOSTUS })
+  const treffer = await hostus.suggest('Festuca ovina', { limit: 20, area: 'GER' })
+  melde(treffer.length > 0, `hostus: ${treffer.length} Vorschläge`)
+
+  // Der Kern der Anfrage: jeder Treffer trägt einen Euro+Med-Namen, denn
+  // genau der geht später an habitatus. Ohne require_target_space kam
+  // keiner — und die Liste zeigte dasselbe Taxon einmal je Referenzwerk.
+  melde(treffer.every((t) => Boolean(t.name)), `hostus: alle ${treffer.length} Treffer mit Euro+Med-Namen`)
+  const namen = new Set(treffer.map((t) => t.name))
+  melde(namen.size === treffer.length, `hostus: keine gleichnamigen Vorschläge (${namen.size} Namen auf ${treffer.length} Treffer)`)
+  melde(treffer.some((t) => t.inArea), `hostus: Gebietsbezug wirkt (${treffer.filter((t) => t.inArea).length} von ${treffer.length} für GER verzeichnet)`)
 } catch (err) {
   melde(false, `hostus: ${err.message}`)
 }
