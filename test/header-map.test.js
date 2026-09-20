@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { deriveHeader, HEADER_FIELDS, missingFields, COAST_VALUES, DUNE_VALUES } from '../src/header-map.js'
+import { deriveHeader, HEADER_FIELDS, missingFields, COAST_VALUES, DUNE_VALUES, tdwgRegionOf } from '../src/header-map.js'
 import { loadFixture } from './helpers/fixtures.js'
 
 test('die sieben Pflichtfelder heißen exakt wie in habitatus', () => {
@@ -90,4 +90,25 @@ test('eine leere Antwort führt zu sieben missing, nicht zu einem Absturz', () =
   const { header, origin } = deriveHeader({ results: [] })
   assert.equal(missingFields(origin).length, 7)
   assert.equal(header.Country, null)
+})
+
+test('die TDWG-Region kommt aus wgsrpd-level3, nicht aus der Länderkennung', () => {
+  const doc = {
+    gazetteer: { admin: { country_iso: 'DE' } },
+    results: [{
+      source_id: 'wgsrpd-level3',
+      features: [{ layer: 'botanical_countries', properties: { LEVEL3_COD: 'GER', LEVEL3_NAM: 'Germany' } }],
+    }],
+  }
+  assert.equal(tdwgRegionOf(doc), 'GER')
+  // Die Kopfdaten für habitatus führen das ESy-Länderkürzel; die botanische
+  // Region gehört nicht hinein.
+  const { header, tdwgRegion } = deriveHeader(doc)
+  assert.equal(tdwgRegion, 'GER')
+  assert.ok(!Object.keys(header).includes('tdwgRegion'))
+})
+
+test('ohne wgsrpd-Quelle bleibt die Region leer', () => {
+  assert.equal(tdwgRegionOf({ results: [] }), null)
+  assert.equal(deriveHeader({ results: [] }).tdwgRegion, null)
 })

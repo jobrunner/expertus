@@ -31,3 +31,26 @@ test('ein geleertes Kopfdatenfeld gilt als fehlend, nicht als von Hand gesetzte 
   assert.equal(store.get().plot.headerOrigin.Ecoreg, 'missing')
   assert.match(actions.blockingReason(), /Ecoreg/)
 })
+
+test('die TDWG-Region kommt mit den Kopfdaten in den Plot', async () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  assert.equal(store.get().plot.tdwgRegion, null)
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  await actions.fetchHeader()
+  // Ohne sie sucht die Artenliste ohne Gebietsbezug, und hostus meldet zu
+  // jedem Treffer in_area=false.
+  assert.equal(store.get().plot.tdwgRegion, 'GER')
+})
+
+test('eine neue Koordinate verwirft die Region wie die abgeleiteten Kopfdaten', async () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  await actions.fetchHeader()
+  assert.equal(store.get().plot.tdwgRegion, 'GER')
+  actions.setCoordinate({ lat: 40.0, lon: -3.0, source: 'manual' })
+  // Die alte Region gehört zur alten Koordinate; stehen zu bleiben hieße,
+  // Vorschläge für das falsche Gebiet zu gewichten.
+  assert.equal(store.get().plot.tdwgRegion, null)
+})
