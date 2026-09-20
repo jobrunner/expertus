@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/jobrunner/expertus/compare/v0.2.0...v0.2.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ratchet:** gate on per-function size instead of per-file complexity sum ([b814cdb](https://github.com/jobrunner/expertus/commit/b814cdb3144dbc25acd01289b8545a8dcc4ad51d))
+
 ## [0.2.0](https://github.com/jobrunner/expertus/compare/v0.1.0...v0.2.0) (2026-09-19)
 
 
