@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/jobrunner/expertus/compare/v0.2.1...v0.2.2) (2026-09-20)
+
+
+### Bug Fixes
+
+* **hostus:** request Euro+Med names and pass the plot's region ([a7c2e91](https://github.com/jobrunner/expertus/commit/a7c2e91a676c76f22971672d1f6d88a1eb96b54d))
+* **plot-list:** keep focus in the search field while typing ([52adacf](https://github.com/jobrunner/expertus/commit/52adacf58e3354bb3a36f573ddc83beef02c43aa))
+* **smoke:** call ortus with the signature the adapter actually has ([34e83fc](https://github.com/jobrunner/expertus/commit/34e83fc263f625e1eb2fec58216b474ca2de43e2))
+
 ## [0.2.1](https://github.com/jobrunner/expertus/compare/v0.2.0...v0.2.1) (2026-09-20)
 
 
