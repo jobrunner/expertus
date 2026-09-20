@@ -31,6 +31,16 @@ const FIELDS = {
   DEG_LON: (doc) => number(doc.wgs84 ? doc.wgs84.lon : (doc.coordinate?.srid === 4326 ? doc.coordinate.x : null)),
 }
 
+// Die TDWG-Region (WGSRPD Level 3, etwa "GER") steht bewusst NICHT in
+// HEADER_FIELDS: diese Felder gehen an habitatus, und das erwartet als
+// Gebietsangabe das ESy-Länderkürzel aus der ISO-Kennung, nicht den
+// botanischen Code. hostus dagegen kennt genau diese Regionen. Beide
+// Angaben stammen aus derselben ortus-Antwort, bezeichnen aber
+// Verschiedenes und dürfen nicht verwechselt werden.
+export function tdwgRegionOf(doc) {
+  return prop(doc, 'wgsrpd-level3', 'botanical_countries', 'LEVEL3_COD') ?? null
+}
+
 export function deriveHeader(doc) {
   const header = {}
   const origin = {}
@@ -39,7 +49,7 @@ export function deriveHeader(doc) {
     header[field] = value
     origin[field] = value === null ? 'missing' : 'ortus'
   }
-  return { header, origin, evidence: evidenceOf(doc) }
+  return { header, origin, evidence: evidenceOf(doc), tdwgRegion: tdwgRegionOf(doc) }
 }
 
 export function missingFields(origin) {

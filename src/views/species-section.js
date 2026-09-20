@@ -6,6 +6,19 @@ import { classesFor, SCALES } from '../cover.js'
 import { formatCover } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
 
+// Der Hinweis unter einem Vorschlag. Zuvor stand hier bei jedem Treffer
+// "nicht Euro+Med" — die Prüfung dahinter konnte nie zutreffen. Jetzt
+// liefert hostus ausschließlich Namen aus Euro+Med, und der Hinweis trägt
+// das, was der Anwender wirklich braucht: unter welchem Namen der Dienst
+// das Konzept führt, wenn er vom übernommenen abweicht, und ob es für das
+// Gebiet des Plots verzeichnet ist.
+function hinweisFuer(o, region) {
+  const teile = []
+  if (o.matchedName) teile.push(`für ${o.matchedName}`)
+  if (region && !o.inArea) teile.push(`nicht für ${region} verzeichnet`)
+  return teile.length ? teile.join(' · ') : null
+}
+
 export function renderSpeciesSection({ plot, actions, hostus }) {
   const input = el('input', {
     id: 'art-suche', type: 'text', role: 'combobox', autocomplete: 'off',
@@ -21,10 +34,13 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
     // Kennung.
     idPrefix: 'expertus-option-',
     // Das Modul kennt nur id, text und einen optionalen hinweis — die
-    // Fachlichkeit (EuroSL ja/nein) wird hier auf diese drei Felder
-    // abgebildet, in beide Richtungen.
-    suggest: async (q, opts) => (await hostus.suggest(q, opts))
-      .map((o) => ({ id: o.conceptId, text: o.name, hinweis: o.isEuroSl ? null : 'nicht Euro+Med' })),
+    // Fachlichkeit wird hier auf diese drei Felder abgebildet.
+    //
+    // Die Gebietsangabe stammt aus den Kopfdaten des Plots und ist die
+    // TDWG-Region, die hostus erwartet. Ohne Koordinate gibt es sie nicht;
+    // dann sucht der Dienst ohne Gebietsbezug.
+    suggest: async (q, opts) => (await hostus.suggest(q, { ...opts, area: plot.tdwgRegion ?? null }))
+      .map((o) => ({ id: o.conceptId, text: o.name, hinweis: hinweisFuer(o, plot.tdwgRegion) })),
     onPick: (o) => actions.addSpecies({ name: o.text, conceptId: o.id ?? null, entry: o.id ? 'suggest' : 'manual' }),
     // Fällt hostus aus, blockiert das die Erfassung nicht: der Name bleibt
     // von Hand eingebbar, nur der Hinweis erscheint.

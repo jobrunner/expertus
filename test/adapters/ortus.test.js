@@ -33,8 +33,11 @@ test('MGRS landet als eigener Parameter, ohne srid', async () => {
 test('der Adapter gibt Kopfdaten und die reprojizierte Koordinate heraus, nicht die ortus-Antwort', async () => {
   const ortus = createOrtus({ baseUrl: BASE, fetch: createFakeFetch({ json: loadFixture('berlin') }) })
   const out = await ortus.lookup({ system: '4326', x: 13.405, y: 52.52 })
-  assert.deepEqual(Object.keys(out).sort(), ['coordinate', 'evidence', 'header', 'origin'])
+  assert.deepEqual(Object.keys(out).sort(), ['coordinate', 'evidence', 'header', 'origin', 'tdwgRegion'])
   assert.equal(out.header.Country, 'Germany')
+  // Die botanische Region für die Artensuche — nicht zu verwechseln mit
+  // dem Länderkürzel für habitatus, das in header.Country steht.
+  assert.equal(out.tdwgRegion, 'GER')
   assert.deepEqual(out.coordinate, { lat: 52.52, lon: 13.405 })
   assert.equal('results' in out, false)
 })

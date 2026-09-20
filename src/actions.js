@@ -69,6 +69,9 @@ function newPlot({ store, storage }) {
     header: emptyHeader(),
     headerOrigin: emptyOrigin(),
     headerEvidence: {},
+    // Die botanische Region für die Artensuche. Sie stammt wie die
+    // Kopfdaten aus ortus, geht aber nicht an habitatus.
+    tdwgRegion: null,
     scale: 'bb-classic',
     species: [],
     evaluation: null,
@@ -121,6 +124,7 @@ function setCoordinate(deps, { lat, lon, source, accuracyM = null }) {
       header,
       headerOrigin: origin,
       headerEvidence: {},
+      tdwgRegion: null,
     }
   })
 }
@@ -156,6 +160,7 @@ function setCoordinateInput(deps, { system, x, y, text, source, accuracyM = null
         header,
         headerOrigin: origin,
         headerEvidence: {},
+      tdwgRegion: null,
       }
     })
   }
@@ -173,6 +178,7 @@ function setCoordinateInput(deps, { system, x, y, text, source, accuracyM = null
       header,
       headerOrigin: origin,
       headerEvidence: {},
+      tdwgRegion: null,
     }
   })
 }
@@ -206,7 +212,7 @@ async function fetchHeader(deps, state) {
   const signal = state.headerAbort.signal
   store.set({ headerPending: true, error: null })
   try {
-    const { header, origin, evidence, coordinate } = await ortus.lookup({ ...input, signal })
+    const { header, origin, evidence, coordinate, tdwgRegion } = await ortus.lookup({ ...input, signal })
     // Den Plot-Stand erst NACH dem Abruf lesen: zwischen Start und
     // Eintreffen der Antwort kann der Nutzer Felder von Hand gesetzt
     // haben. Ein von Hand korrigierter Wert bleibt Vorrang vor der
@@ -218,7 +224,7 @@ async function fetchHeader(deps, state) {
       // hierhin unbekannt (coordinate: null) — jetzt trägt die Antwort
       // sie nach (siehe wgs84Of() im ortus-Adapter). Bei WGS 84 ist es
       // derselbe Wert, den setCoordinate schon gesetzt hatte.
-      return { ...p, coordinate: coordinate ?? p.coordinate, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence }
+      return { ...p, coordinate: coordinate ?? p.coordinate, header: mergedHeader, headerOrigin: mergedOrigin, headerEvidence: evidence, tdwgRegion: tdwgRegion ?? null }
     }, { extra: { headerPending: false } })
   } catch (err) {
     // Ein Abbruch ist kein Fehler, sondern der Normalfall beim
