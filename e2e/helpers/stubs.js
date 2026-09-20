@@ -7,6 +7,11 @@ const CONFIG = {
   hostusBaseUrl: 'https://hostus.test',
 }
 
+// Dieselben Adressen als flache Liste: die CSP des Testservers muss genau
+// sie nennen, sonst blockiert der Browser die gestubbten Aufrufe. Abgeleitet
+// statt zweitgeschrieben, damit beides nicht auseinanderläuft.
+const ERWARTETE_QUELLEN = Object.values(CONFIG)
+
 const ORTUS_BERLIN = {
   coordinate: { srid: 4326, x: 13.405, y: 52.52 },
   wgs84: { lon: 13.405, lat: 52.52 },
@@ -55,4 +60,4 @@ export async function stubServices(page, over = {}) {
   )
 }
 
-export { CONFIG, ORTUS_BERLIN, HABITATUS_OK, HOSTUS_SUGGEST }
+export { CONFIG, ERWARTETE_QUELLEN, ORTUS_BERLIN, HABITATUS_OK, HOSTUS_SUGGEST }
