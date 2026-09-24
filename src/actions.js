@@ -91,9 +91,15 @@ function newPlot({ store, storage }) {
   return saved
 }
 
-function openPlot({ store, storage }, sampleId) {
+function openPlot(deps, sampleId) {
+  const { store, storage } = deps
   const found = storage.load(sampleId)
   store.set({ plot: found, error: null })
+  // Ein gespeicherter Plot bringt sein Ergebnis mit, die Angaben dazu
+  // nicht. Ohne await: das Öffnen soll nicht auf ein Nachschlagewerk
+  // warten, das vielleicht gar nicht eingerichtet ist.
+  const code = found?.evaluation?.response?.result
+  if (code) fetchHabitat(deps, code)
   return found
 }
 
@@ -326,6 +332,44 @@ function blockingReason({ store }) {
   return null
 }
 
+// Holt das Nachschlagewerk zu einem erkannten Habitattyp. Eigene Aktion
+// statt eines Anhängsels an evaluate(): die Angaben werden auch gebraucht,
+// wenn ein längst gespeicherter Plot wieder geöffnet wird — sein Ergebnis
+// liegt dann vor, die Beschreibung dazu nicht.
+//
+// Nicht im Plot gespeichert, sondern nur im Zustand gehalten: es sind
+// Nachschlagedaten, keine Erfassung. Im Plot lägen sie als Kopie herum, die
+// veraltet, sobald situs seine Artefakte erneuert.
+async function fetchHabitat(deps, code, { erneut = false } = {}) {
+  const { store, situs } = deps
+  if (!code) return
+  const vorhanden = store.get().habitat
+  // Zu diesem Code ist schon etwas bekannt — auch ein Fehler zählt dazu.
+  //
+  // Dass ein Fehlschlag hier abblockt, ist der entscheidende Punkt: der
+  // Abruf wird beim Zeichnen angestoßen, und das Setzen des Fehlers zeichnet
+  // neu. Würde nach einem Fehler von selbst erneut geholt, liefe daraus eine
+  // Schleife, die einen ohnehin angeschlagenen Dienst mit Anfragen überzieht
+  // — gemessen: Dutzende Anfragen in anderthalb Sekunden. Ein neuer Versuch
+  // geschieht deshalb nur auf Zuruf, über den Knopf in der Ansicht.
+  if (vorhanden?.code === code && !erneut) return
+
+  store.set({ habitat: { code, data: null, pending: true, error: null } })
+  try {
+    const data = await situs.habitatType(code)
+    // Inzwischen ein anderer Typ: die späte Antwort gehört nicht mehr zur
+    // Anzeige und würde sonst den neueren Stand überschreiben.
+    if (store.get().habitat?.code !== code) return
+    store.set({ habitat: { code, data, pending: false, error: null } })
+  } catch (err) {
+    if (store.get().habitat?.code !== code) return
+    // Kein store.set({ error }): ein ausgefallenes Nachschlagewerk darf die
+    // Maske nicht mit einer Fehlermeldung überziehen. Das Ergebnis der
+    // Auswertung steht unabhängig davon.
+    store.set({ habitat: { code, data: null, pending: false, error: err } })
+  }
+}
+
 async function evaluate(deps) {
   const { store, habitatus, now } = deps
   const reason = blockingReason(deps)
@@ -349,6 +393,11 @@ async function evaluate(deps) {
       (p) => ({ ...p, evaluation: { at: now(), request: response.request, response, status: 'ok' } }),
       { dirty: false, extra: { evaluating: false } },
     )
+    // Erst nach dem Speichern des Ergebnisses: der Abruf gehört in die
+    // Aktion, nicht in die Ansicht. Ein store.set() aus einer
+    // Renderfunktion heraus zeichnet mitten im laufenden Durchlauf neu —
+    // gemessen entstanden dabei kurzzeitig zwei Ansichtsbäume.
+    fetchHabitat(deps, response.result)
   } catch (err) {
     if (err?.name === 'AbortError') {
       store.set({ evaluating: false })
@@ -377,8 +426,8 @@ async function evaluate(deps) {
 // Aktionen ein rein kosmetischer Aufschlag ohne jede Verzweigung darin.
 // `state` hält den einzigen wirklich veränderlichen Zustand (den
 // laufenden headerAbort) über mehrere fetchHeader()-Aufrufe hinweg.
-export function createActions({ store, storage, ortus, habitatus, now = () => new Date().toISOString() }) {
-  const deps = { store, storage, ortus, habitatus, now }
+export function createActions({ store, storage, ortus, habitatus, situs, now = () => new Date().toISOString() }) {
+  const deps = { store, storage, ortus, habitatus, situs, now }
   const state = { headerAbort: null }
   return {
     newPlot: newPlot.bind(null, deps),
@@ -386,6 +435,7 @@ export function createActions({ store, storage, ortus, habitatus, now = () => ne
     setCoordinate: setCoordinate.bind(null, deps),
     setCoordinateInput: setCoordinateInput.bind(null, deps),
     fetchHeader: fetchHeader.bind(null, deps, state),
+    fetchHabitat: fetchHabitat.bind(null, deps),
     setHeaderField: setHeaderField.bind(null, deps),
     addSpecies: addSpecies.bind(null, deps),
     removeSpecies: removeSpecies.bind(null, deps),

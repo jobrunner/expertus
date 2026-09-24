@@ -7,12 +7,14 @@
 // Absichtlich nicht in der CI: fremde Dienste, fremde Verfügbarkeit.
 import { createOrtus } from '../src/adapters/ortus.js'
 import { createHostus } from '../src/adapters/hostus.js'
+import { createSitus } from '../src/adapters/situs.js'
 import { createHabitatus } from '../src/adapters/habitatus.js'
 import { HEADER_FIELDS, missingFields } from '../src/header-map.js'
 
 const ORTUS = process.env.ORTUS_BASE_URL ?? 'https://ortus.fieldworksdiary.org'
 const HOSTUS = process.env.HOSTUS_BASE_URL ?? 'https://hostus.fieldworksdiary.org'
 const HABITATUS = process.env.HABITATUS_BASE_URL ?? 'https://habitatus.fieldworksdiary.org'
+const SITUS = process.env.SITUS_BASE_URL ?? 'https://situs.fieldworksdiary.org'
 
 // erwarteBelege: die Belegfelder, an denen die Anzeige hängt. Sie fließen
 // nirgends in die Auswertung ein, stehen aber als Nebentext in der Maske —
@@ -87,6 +89,30 @@ if (kopf) {
   }
 } else {
   melde(false, 'habitatus: übersprungen, weil ortus keine vollständigen Kopfdaten lieferte')
+}
+
+// situs: führt es den Typ, den habitatus gerade bestimmt hat, und liefert es
+// die Felder, aus denen die Maske Name, Beschreibung, Syntaxa und Arten
+// baut? Eine Umbenennung dort bräche die Anzeige sonst unbemerkt — die
+// Oberflächentests laufen gegen Attrappen.
+try {
+  const situs = createSitus({ baseUrl: SITUS })
+  const h = await situs.habitatType('R55')
+  melde(Boolean(h), 'situs: R55 ist bekannt')
+  if (h) {
+    melde(Boolean(h.name), `situs: Name vorhanden (${h.name ?? 'keiner'})`)
+    melde(Boolean(h.beschreibung), 'situs: Beschreibung vorhanden')
+    melde(Boolean(h.quelle), `situs: Herkunft der Beschreibung benannt (${h.quelle ?? 'keine'})`)
+    melde(h.syntaxa.length > 0, `situs: ${h.syntaxa.length} Pflanzengesellschaften`)
+    const rollen = Object.entries(h.arten).map(([k, v]) => `${k}=${v.length}`).join(', ')
+    melde(Object.values(h.arten).some((v) => v.length > 0), `situs: Arten nach Rolle (${rollen})`)
+  }
+  // Ein unbekannter Typ ist kein Fehler, sondern eine leere Auskunft. Wäre
+  // das anders, überzöge jeder Code außerhalb des Index die Maske mit einer
+  // Fehlermeldung.
+  melde((await situs.habitatType('ZZ99')) === null, 'situs: unbekannter Code liefert null, wirft nicht')
+} catch (err) {
+  melde(false, `situs: ${err.message}`)
 }
 
 process.exit(fehler ? 1 : 0)

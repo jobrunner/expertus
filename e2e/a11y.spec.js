@@ -78,3 +78,22 @@ test('der Fokus ist sichtbar und die Reihenfolge folgt der Lesereihenfolge', asy
   // eingabe (Aufgabe 12), dann erst das Koordinatenfeld selbst.
   expect(reihenfolge.slice(0, 4)).toEqual(['Zum Inhalt springen', 'Plots', 'sample', 'standort-system'])
 })
+
+test('die Angaben zum Habitattyp sind barrierefrei', async ({ page }) => {
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Festuca ovina')
+  await input.press('Enter')
+  await page.getByLabel('Deckung von Festuca ovina').selectOption('3')
+  await page.getByRole('button', { name: 'Auswerten' }).click()
+  // Beide Akkordeons offen: zugeklappt prüft axe ihren Inhalt nicht, und
+  // gerade die Artenlisten mit ihren Zwischenüberschriften sind es, die
+  // eine Überschriftenebene überspringen könnten.
+  await page.getByText(/Pflanzengesellschaften/).click()
+  await page.getByText(/Arten des Habitattyps/).click()
+  await pruefe(page)
+})

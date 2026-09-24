@@ -5,6 +5,7 @@ import { createRouter } from './router.js'
 import { createStorage } from './storage.js'
 import { createOrtus } from './adapters/ortus.js'
 import { createHostus } from './adapters/hostus.js'
+import { createSitus } from './adapters/situs.js'
 import { createHabitatus } from './adapters/habitatus.js'
 import { createActions } from './actions.js'
 import { clear, announce } from './dom.js'
@@ -20,13 +21,14 @@ const live = document.getElementById('meldungen')
 
 try {
   const config = await loadConfig()
-  const store = createStore({ plot: null, headerPending: false, evaluating: false, error: null, index: [] })
+  const store = createStore({ plot: null, headerPending: false, evaluating: false, error: null, index: [], habitat: null })
   const storage = createStorage({ backend: window.localStorage })
   const actions = createActions({
     store,
     storage,
     ortus: createOrtus({ baseUrl: config.ortusBaseUrl }),
     habitatus: createHabitatus({ baseUrl: config.habitatusBaseUrl }),
+    situs: createSitus({ baseUrl: config.situsBaseUrl }),
   })
   const hostus = createHostus({ baseUrl: config.hostusBaseUrl })
 

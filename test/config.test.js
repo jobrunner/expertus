@@ -9,8 +9,22 @@ const VOLL = {
   hostusBaseUrl: 'https://hostus.example.org',
 }
 
-test('die drei Basis-URLs werden gelesen', async () => {
-  assert.deepEqual(await loadConfig({ fetch: createFakeFetch({ json: VOLL }) }), VOLL)
+test('die drei Pflichtadressen werden gelesen', async () => {
+  // situs ist freiwillig und fehlt hier — es kommt als leere Zeichenkette
+  // heraus, nicht als undefined: der Adapter prüft darauf und fragt dann
+  // gar nicht erst.
+  assert.deepEqual(await loadConfig({ fetch: createFakeFetch({ json: VOLL }) }), { ...VOLL, situsBaseUrl: '' })
+})
+
+test('die Adresse von situs wird durchgereicht, wenn sie dasteht', async () => {
+  const mitSitus = { ...VOLL, situsBaseUrl: 'https://situs.example.org' }
+  assert.deepEqual(await loadConfig({ fetch: createFakeFetch({ json: mitSitus }) }), mitSitus)
+})
+
+test('ohne situs startet die Anwendung trotzdem', async () => {
+  // Ein fehlender Pflichtdienst wirft; situs darf das nicht auslösen, sonst
+  // käme eine Installation ohne Nachschlagewerk gar nicht erst hoch.
+  await assert.doesNotReject(() => loadConfig({ fetch: createFakeFetch({ json: VOLL }) }))
 })
 
 test('config.json wird ohne Cache geholt', async () => {

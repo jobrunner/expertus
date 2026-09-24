@@ -5,6 +5,7 @@ const CONFIG = {
   ortusBaseUrl: 'https://ortus.test',
   habitatusBaseUrl: 'https://habitatus.test',
   hostusBaseUrl: 'https://hostus.test',
+  situsBaseUrl: 'https://situs.test',
 }
 
 // Dieselben Adressen als flache Liste: die CSP des Testservers muss genau
@@ -24,6 +25,30 @@ const ORTUS_BERLIN = {
     { source_id: 'coast-eea-2022', features: [{ layer: 'coast_eea', properties: { coast_eea: 'N_COAST', sea_region: '' } }] },
     { source_id: 'bohn-dunes-2019', features: [{ layer: 'dunes_bohn', properties: { dunes_bohn: 'N_DUNES', bohn_unit: '' } }] },
   ],
+}
+
+// Nachgebildet nach einer echten Antwort von situs zu R1A. Die Felder
+// heißen wie dort: name_en, description.value, species nach Rolle,
+// syntaxa mit rank und author.
+const SITUS_R1A = {
+  typology: 'eunis@2021',
+  code: 'R1A',
+  level: 3,
+  name_en: 'Semi-dry perennial calcareous grassland (meadow steppe)',
+  description: {
+    value: 'Artenreiche Halbtrockenrasen basenreicher Böden.',
+    provenance: 'official',
+    source: 'floraveg:eunis-habitat-factsheets:2021-06-01',
+  },
+  species: {
+    diagnostic: [{ concept_id: 'wcvp:1', verbatim_name: 'Bromus erectus', role: 'diagnostic', fidelity: 21 }],
+    constant: [{ concept_id: 'wcvp:2', verbatim_name: 'Festuca rupicola', role: 'constant', constancy: 18 }],
+    dominant: [{ concept_id: 'wcvp:3', verbatim_name: 'Carex humilis', role: 'dominant', constancy: 12 }],
+  },
+  syntaxa: [
+    { id: 'XD01', rank: 'alliance', name: 'Cirsio-Brachypodion pinnati', author: 'Hadač et Klika 1944', parent_id: 'XD', eea_code: 'FES-01', source: 'evc' },
+  ],
+  crosswalks: [],
 }
 
 const HABITATUS_OK = {
@@ -52,19 +77,23 @@ const HOSTUS_SUGGEST = {
   ],
 }
 
-export async function stubServices(page, over = {}) {
-  const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
-
-  await page.route('**/config.json', (route) => route.fulfill(json(over.config ?? CONFIG)))
-  await page.route('https://ortus.test/api/v1/query*', (route) =>
-    route.fulfill(over.ortus ?? json(ORTUS_BERLIN)),
-  )
-  await page.route('https://habitatus.test/api/v1/classify', (route) =>
-    route.fulfill(over.habitatus ?? json(HABITATUS_OK)),
-  )
-  await page.route('https://hostus.test/v1/suggest*', (route) =>
-    route.fulfill(over.hostus ?? json(HOSTUS_SUGGEST)),
-  )
+// over.<dienst> ist eine fertige Antwort im Format von route.fulfill —
+// damit lässt sich ein Fehlerfall stellen. Ohne Angabe kommt die Vorgabe
+// als JSON mit Status 200.
+function json(body, status = 200) {
+  return { status, contentType: 'application/json', body: JSON.stringify(body) }
 }
 
-export { CONFIG, ERWARTETE_QUELLEN, ORTUS_BERLIN, HABITATUS_OK, HOSTUS_SUGGEST }
+async function stub(page, muster, eigen, vorgabe) {
+  await page.route(muster, (route) => route.fulfill(eigen ?? json(vorgabe)))
+}
+
+export async function stubServices(page, over = {}) {
+  await stub(page, '**/config.json', over.config && json(over.config), CONFIG)
+  await stub(page, 'https://ortus.test/api/v1/query*', over.ortus, ORTUS_BERLIN)
+  await stub(page, 'https://habitatus.test/api/v1/classify', over.habitatus, HABITATUS_OK)
+  await stub(page, 'https://hostus.test/v1/suggest*', over.hostus, HOSTUS_SUGGEST)
+  await stub(page, 'https://situs.test/v1/habitat-type/**', over.situs, SITUS_R1A)
+}
+
+export { CONFIG, ERWARTETE_QUELLEN, ORTUS_BERLIN, HABITATUS_OK, HOSTUS_SUGGEST, SITUS_R1A }

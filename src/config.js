@@ -4,6 +4,13 @@
 // laufen, und das fiele erst am falschen Ergebnis auf.
 const REQUIRED = ['ortusBaseUrl', 'habitatusBaseUrl', 'hostusBaseUrl']
 
+// situs ist als einziger Dienst freiwillig: ohne ihn fehlen nur die
+// Angaben zum erkannten Habitattyp, erfassen und auswerten geht weiter.
+// Der Server lässt die Adresse aus /config.json heraus, wenn
+// SITUS_BASE_URL nicht gesetzt ist — ein leerer Wert hier bedeutet also
+// "nicht eingerichtet", nicht "kaputt konfiguriert".
+const OPTIONAL = ['situsBaseUrl']
+
 export async function loadConfig({ fetch = globalThis.fetch } = {}) {
   const res = await fetch('/config.json', { cache: 'no-store' })
   if (!res.ok) throw new Error(`config.json nicht ladbar: HTTP ${res.status}`)
@@ -19,5 +26,7 @@ export async function loadConfig({ fetch = globalThis.fetch } = {}) {
   }
   const fehlend = REQUIRED.filter((k) => typeof cfg?.[k] !== 'string' || !cfg[k])
   if (fehlend.length) throw new Error(`config.json unvollständig: ${fehlend.join(', ')}`)
-  return { ortusBaseUrl: cfg.ortusBaseUrl, habitatusBaseUrl: cfg.habitatusBaseUrl, hostusBaseUrl: cfg.hostusBaseUrl }
+  const aus = Object.fromEntries(REQUIRED.map((k) => [k, cfg[k]]))
+  for (const k of OPTIONAL) aus[k] = typeof cfg?.[k] === 'string' ? cfg[k] : ''
+  return aus
 }
