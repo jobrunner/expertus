@@ -1,0 +1,105 @@
+{
+  "typology": "eunis@2021",
+  "code": "R55",
+  "level": 3,
+  "name_en": "Lowland moist or wet tall-herb and fern fringe",
+  "description": {
+    "value": "Tall-herb and fern-dominated communities of moist, sometimes flooded nutrient-rich soils in the lowlands and low mountain areas of Europe, up to the subalpine zone, through the temperate, boreal and submediterranean regions. The relatively species-rich vegetation may be found in river floodplains, along smaller watercourses, in the shade at the edge of forests, often as narrow strips, and, as secondary vegetation after the abandonment of pastures and especially meadows. The species composition is quite diverse, depending on the altitude, geographic distribution and location in the landscape.",
+    "provenance": "official",
+    "source": "floraveg:eunis-habitat-factsheets:2021-06-01"
+  },
+  "species": {
+    "constant": [
+      {
+        "concept_id": "wcvp:concept:2623499",
+        "verbatim_name": "Aegopodium podagraria",
+        "role": "constant",
+        "constancy": 19
+      },
+      {
+        "concept_id": "wcvp:concept:390383",
+        "verbatim_name": "Agrostis stolonifera",
+        "role": "constant",
+        "constancy": 16
+      },
+      {
+        "concept_id": "wcvp:concept:2639281",
+        "verbatim_name": "Angelica sylvestris",
+        "role": "constant",
+        "constancy": 19
+      }
+    ],
+    "diagnostic": [
+      {
+        "concept_id": "wcvp:concept:2448560",
+        "verbatim_name": "Urtica dioica",
+        "role": "diagnostic",
+        "fidelity": 16
+      }
+    ],
+    "dominant": [
+      {
+        "concept_id": "wcvp:concept:2921975",
+        "verbatim_name": "Filipendula ulmaria",
+        "role": "dominant",
+        "constancy": 15
+      },
+      {
+        "concept_id": "wcvp:concept:2912815",
+        "verbatim_name": "Petasites hybridus",
+        "role": "dominant",
+        "constancy": 8
+      },
+      {
+        "concept_id": "wcvp:concept:2448560",
+        "verbatim_name": "Urtica dioica",
+        "role": "dominant",
+        "constancy": 16
+      }
+    ]
+  },
+  "syntaxa": [
+    {
+      "id": "CM05E",
+      "rank": "alliance",
+      "name": "Conioselinion tatarici",
+      "author": "Golub et al. 2003 nom. inval. (5a)",
+      "parent_id": "CM05",
+      "eea_code": "MOL-05E",
+      "source": "evc",
+      "parent_provenance": "official"
+    },
+    {
+      "id": "CM08A",
+      "rank": "alliance",
+      "name": "Filipendulo-Petasition",
+      "author": "Br.-Bl. ex Duvigneaud 1949",
+      "parent_id": "CM08",
+      "eea_code": "MOL-08A",
+      "source": "evc",
+      "parent_provenance": "official"
+    },
+    {
+      "id": "CM08B",
+      "rank": "alliance",
+      "name": "Rumicion balcanici",
+      "author": "Lakušić ex D. Lakušić et al. 2015",
+      "parent_id": "CM08",
+      "eea_code": "MOL-08B",
+      "source": "evc",
+      "parent_provenance": "official"
+    }
+  ],
+  "crosswalks": [
+    {
+      "typology": "annex1",
+      "code": "6430",
+      "qualifier": "<"
+    },
+    {
+      "typology": "eunis@2012",
+      "code": "E5.4",
+      "qualifier": "<"
+    }
+  ]
+}

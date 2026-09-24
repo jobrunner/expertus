@@ -27,6 +27,7 @@ export default defineConfig({
       ORTUS_BASE_URL: 'https://ortus.test',
       HABITATUS_BASE_URL: 'https://habitatus.test',
       HOSTUS_BASE_URL: 'https://hostus.test',
+      SITUS_BASE_URL: 'https://situs.test',
       PORT: TEST_PORT,
     },
   },

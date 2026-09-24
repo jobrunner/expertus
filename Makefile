@@ -12,7 +12,8 @@ TEST_PORT ?= 5174
 # genau der Fall, den e2e/helpers/pruefe-server.js meldet.
 TEST_ENV = ORTUS_BASE_URL=https://ortus.test \
            HABITATUS_BASE_URL=https://habitatus.test \
-           HOSTUS_BASE_URL=https://hostus.test
+           HOSTUS_BASE_URL=https://hostus.test \
+           SITUS_BASE_URL=https://situs.test
 
 DEV_ENV = ORTUS_BASE_URL=https://ortus.fieldworksdiary.org \
           HABITATUS_BASE_URL=https://habitatus.fieldworksdiary.org \

@@ -4,6 +4,7 @@
 // Knopfdruck, keine Navigation.
 import { el, stapelbar } from '../dom.js'
 import { resultLabel, statusLabel } from '../format.js'
+import { ROLLEN } from '../adapters/situs.js'
 
 export function renderResultSection({ plot, actions, store }) {
   const grund = actions.blockingReason()
@@ -28,12 +29,111 @@ export function renderResultSection({ plot, actions, store }) {
     }),
     hinweis,
     ergebnis(ev, actions),
+    habitat(ev, store, actions),
     ev?.status === 'ok' || ev?.status === 'stale' ? anhang(ev) : null,
   ])
 
   // Der Abschnitt hält keine Ressourcen; die einheitliche Form hält die
   // Maske frei davon, zwei Rückgabearten unterscheiden zu müssen.
   return { node }
+}
+
+// Was situs über den erkannten Typ weiß: Name und Beschreibung sichtbar,
+// Pflanzengesellschaften und Arten aufklappbar. Die Beschreibung ist der
+// Grund, warum das hier steht — ein Code wie "R55" sagt im Gelände wenig.
+//
+// Diese Funktion zeichnet nur; angestoßen wird der Abruf in den Aktionen
+// (evaluate und openPlot). Ein store.set() aus einer Renderfunktion heraus
+// zeichnet mitten im laufenden Durchlauf neu — gemessen entstanden dabei
+// kurzzeitig zwei Ansichtsbäume mit doppelter Ergebniszeile.
+function habitat(ev, store, actions) {
+  const code = ev?.status === 'ok' || ev?.status === 'stale' ? ev.response?.result : null
+  if (!code) return null
+
+  const h = store.get().habitat
+  if (!h || h.code !== code) return null
+  const zwischenstand = warten(h, code, actions)
+  if (zwischenstand) return zwischenstand
+
+  return angaben(h.data)
+}
+
+// Alles, was vor den eigentlichen Angaben stehen kann: unterwegs,
+// gescheitert, oder ein Typ, den situs nicht führt. Getrennt von der
+// Darstellung der Angaben selbst, weil beides zusammen die Komplexität
+// einer Funktion über die Schranke trieb.
+function warten(h, code, actions) {
+  if (h.pending) return el('p', { class: 'muted', text: 'Angaben zum Habitattyp werden geholt …' })
+  // Ein ausgefallenes Nachschlagewerk bleibt eine Randnotiz: das Ergebnis
+  // der Auswertung steht unabhängig davon. Der neue Versuch geschieht auf
+  // Zuruf — von selbst zu wiederholen hieße, bei jedem Neuzeichnen erneut
+  // anzufragen.
+  if (h.error) {
+    return el('p', {}, [
+      el('span', { class: 'muted', text: 'Angaben zum Habitattyp nicht verfügbar. ' }),
+      el('button', {
+        type: 'button', class: 'btn btn-secondary', text: 'Erneut versuchen',
+        onClick: () => actions.fetchHabitat(code, { erneut: true }),
+      }),
+    ])
+  }
+  if (!h.data) return el('p', { class: 'muted', text: `Zu ${code} liegen keine Angaben vor.` })
+  return null
+}
+
+function angaben(d) {
+  return el('div', { class: 'habitat' }, [
+    d.name ? el('h4', { text: d.name }) : null,
+    d.beschreibung ? el('p', { text: d.beschreibung }) : null,
+    // Die Beschreibung ist zitiert, nicht selbst formuliert.
+    d.quelle ? el('p', { class: 'muted', text: `Quelle: ${d.quelle}` }) : null,
+    syntaxaListe(d.syntaxa),
+    artenListe(d.arten),
+  ])
+}
+
+function syntaxaListe(syntaxa) {
+  if (!syntaxa?.length) return null
+  return el('details', { class: 'akkordeon' }, [
+    el('summary', { text: `Pflanzengesellschaften (${syntaxa.length})` }),
+    el('div', { class: 'akkordeon-inhalt' },
+      el('ul', {}, syntaxa.map((s) => el('li', {}, [
+        el('span', { text: s.name }),
+        // Der Autor gehört zum Namen einer Pflanzengesellschaft, steht aber
+        // gedämpft: er hilft beim Nachschlagen, nicht beim Erkennen.
+        s.autor ? el('span', { class: 'muted', text: ` ${s.autor}` }) : null,
+        s.rang ? el('span', { class: 'muted', text: ` · ${s.rang}` }) : null,
+      ]))),
+    ),
+  ])
+}
+
+function artenListe(arten) {
+  const gruppen = ROLLEN
+    .map(([schluessel, bezeichnung]) => [bezeichnung, arten?.[schluessel] ?? []])
+    .filter(([, liste]) => liste.length)
+  if (!gruppen.length) return null
+  const gesamt = gruppen.reduce((summe, [, liste]) => summe + liste.length, 0)
+
+  return el('details', { class: 'akkordeon' }, [
+    el('summary', { text: `Arten des Habitattyps (${gesamt})` }),
+    el('div', { class: 'akkordeon-inhalt' }, gruppen.flatMap(([bezeichnung, liste]) => [
+      el('h5', { text: `${bezeichnung} (${liste.length})` }),
+      el('ul', {}, liste.map((a) => el('li', {}, [
+        el('span', { text: a.name }),
+        kennzahl(a),
+      ]))),
+    ])),
+  ])
+}
+
+// Stetigkeit und Treue sind unterschiedliche Maße; situs liefert je nach
+// Rolle das eine oder das andere. Ausgeschrieben statt als nackte Zahl:
+// "16" allein wäre im Gelände nicht zu deuten.
+function kennzahl(a) {
+  if (a.fidelity != null) return el('span', { class: 'muted', text: ` · Treue ${a.fidelity}` })
+  if (a.constancy != null) return el('span', { class: 'muted', text: ` · Stetigkeit ${a.constancy}` })
+  return null
 }
 
 function ergebnis(ev, actions) {

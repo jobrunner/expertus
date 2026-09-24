@@ -18,14 +18,17 @@ export const ORIGIN = Object.fromEntries(Object.keys(HEADER).map((k) => [k, 'ort
 // HEADER.Country.
 export const TDWG_REGION = 'GER'
 
-export function setup({ ortus, habitatus } = {}) {
-  const store = createStore({ plot: null, headerPending: false, evaluating: false, error: null })
+export function setup({ ortus, habitatus, situs } = {}) {
+  const store = createStore({ plot: null, headerPending: false, evaluating: false, error: null, habitat: null })
   const storage = createStorage({ backend: createMemoryStorage(), now: () => '2026-09-14T10:00:00.000Z' })
   const actions = createActions({
     store,
     storage,
     ortus: ortus ?? { lookup: async () => ({ header: HEADER, origin: ORIGIN, evidence: {}, tdwgRegion: TDWG_REGION }) },
     habitatus: habitatus ?? { classify: async () => ({ result: 'R1A', matches: [], resolution: [], versions: {}, truncatedAt10: false, request: {} }) },
+    // Gibt von sich aus nichts her: Tests, die das Nachschlagewerk
+    // brauchen, reichen ihren eigenen Stub herein.
+    situs: situs ?? { habitatType: async () => null },
     now: () => '2026-09-14T10:00:00.000Z',
   })
   return { store, storage, actions }

@@ -25,10 +25,11 @@ type Config struct {
 	OrtusBaseURL     string
 	HabitatusBaseURL string
 	HostusBaseURL    string
-	// SitusBaseURL ist vorgesehen, aber noch nicht in Gebrauch: über Situs
-	// sollen später Zusatzinformationen zu einem erkannten Habitat
-	// abrufbar sein. Leer bleibt die Adresse aus CSP und /config.json
-	// heraus.
+	// SitusBaseURL liefert die Angaben zu einem erkannten Habitattyp:
+	// Name, Beschreibung, Pflanzengesellschaften und Arten nach Rolle.
+	// Als einziger Dienst ist er freiwillig — ohne ihn fehlt nur dieser
+	// Abschnitt, erfassen und auswerten gehen weiter. Leer bleibt die
+	// Adresse aus CSP und /config.json heraus.
 	SitusBaseURL string
 	// Fassung steht in der Fußzeile. Sie kommt von außen (main.go liest
 	// sie über expertus.Fassung() aus package.json) statt hier fest zu
