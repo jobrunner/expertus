@@ -1,10 +1,11 @@
 // Der Artenabschnitt der Maske: Vorschlagssuche (ARIA-Combobox über die
 // des Design-Systems, siehe /assets/designsystem.js) und die erfasste
 // Liste mit Deckung je Skala.
-import { el, stapelbar } from '../dom.js'
+import { el, stapelbar, svgIcon } from '../dom.js'
 import { classesFor, SCALES } from '../cover.js'
 import { formatCover } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
+import { schliessen as schliessenSymbol } from '/assets/icons.js'
 
 // Der Hinweis unter einem Vorschlag. Zuvor stand hier bei jedem Treffer
 // "nicht Euro+Med" — die Prüfung dahinter konnte nie zutreffen. Jetzt
@@ -73,17 +74,55 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
   return { node, cleanup: () => combobox.destroy() }
 }
 
+// Auf einem Telefon ist jede Art eine Zeile: Name links, Deckung rechts,
+// Entfernen als Symbol. Vorher brauchte eine Art vier Zeilen und 175 Pixel,
+// nur um eine Deckung einzutragen — bei zwölf Arten 1155 Pixel, die man
+// durchscrollt, statt die Liste zu überblicken.
+//
+// Die Herkunft (aus Vorschlag / von Hand) ist keine eigene Spalte mehr: sie
+// ist Metainformation zu einem Namen, kein Erfassungswert, und steht als
+// Zeichen am Namen. Damit fällt eine Spalte weg, auf jedem Schirm.
 function tabelle(plot, actions) {
   if (!plot.species.length) return el('p', { text: 'Noch keine Art erfasst.' })
-  return stapelbar(el('table', {}, [
-    el('thead', {}, el('tr', {}, ['Art', 'Deckung', 'Erfassung', ''].map((t) => el('th', { scope: 'col', text: t })))),
+  return stapelbar(el('table', { class: 'arten-liste' }, [
+    el('thead', {}, el('tr', {}, ['Art', 'Deckung', ''].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, plot.species.map((s, i) => el('tr', {}, [
-      el('td', { text: s.name }),
-      el('td', {}, [deckung(plot, s, i, actions), el('span', { text: ` ${formatCover(s)}` })]),
-      el('td', { class: 'muted', text: s.entry === 'suggest' ? 'aus Vorschlag' : 'von Hand' }),
-      el('td', {}, el('button', { type: 'button', class: 'btn btn-secondary', text: 'entfernen', 'aria-label': `${s.name} entfernen`, onClick: () => actions.removeSpecies(i) })),
+      el('td', {}, [el('span', { text: s.name }), herkunft(s)]),
+      el('td', {}, [deckung(plot, s, i, actions), el('span', { class: 'deckungswert', text: ` ${formatCover(s)}` })]),
+      el('td', {}, entfernenKnopf(s, i, actions)),
     ]))),
   ]))
+}
+
+// Ein hochgestelltes Zeichen statt eines Worts: die Herkunft unterscheidet
+// zwei Fälle und braucht dafür keine Textspalte. Der ausgeschriebene Text
+// steht im title und wird Hilfsmitteln über aria-label angesagt — das
+// Zeichen allein wäre für sich nicht zu deuten.
+function herkunft(s) {
+  const ausVorschlag = s.entry === 'suggest'
+  return el('sup', {
+    class: 'muted herkunft',
+    text: ausVorschlag ? '\u1d65' : '\u2095',
+    title: ausVorschlag ? 'aus Vorschlag' : 'von Hand',
+    'aria-label': ausVorschlag ? 'aus Vorschlag' : 'von Hand',
+  })
+}
+
+// Der Text "entfernen" nahm auf dem Telefon eine ganze Zeile ein. Als
+// Symbolknopf bleibt die Zielfläche bei 2,75 rem (WCAG 2.5.8 verlangt
+// 24 x 24 px), und der zugängliche Name nennt weiterhin die Art — ein
+// bloßes "entfernen" wäre in einer Liste aus zwölf gleichen Knöpfen nicht
+// zu unterscheiden.
+function entfernenKnopf(s, i, actions) {
+  const knopf = el('button', {
+    type: 'button',
+    class: 'btn btn-secondary btn-icon',
+    'aria-label': `${s.name} entfernen`,
+    title: `${s.name} entfernen`,
+    onClick: () => actions.removeSpecies(i),
+  })
+  knopf.append(svgIcon(schliessenSymbol))
+  return knopf
 }
 
 // Zwanzig Zeilen mit zwanzig gleich benannten Deckungsfeldern wären ohne

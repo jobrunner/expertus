@@ -25,16 +25,25 @@ test('die Liste zeigt zu jedem Plot das Datum', async ({ page }) => {
   await expect(page.getByRole('columnheader', { name: 'Datum' })).toBeVisible()
 })
 
-test('gespeicherte Plots stehen mit Ergebnis und Status in der Tabelle', async ({ page }) => {
+test('gespeicherte Plots stehen mit ihrem Ergebnis in der Liste', async ({ page }) => {
   await seed(page, [
     { sampleId: 'Sylt-03', result: 'R1A', status: 'ok', species: ['Ammophila arenaria'] },
     { sampleId: 'Berlin-01', result: null, status: 'none', species: ['Festuca ovina'] },
   ])
   await page.goto('/#/plots')
+  await expect(page.getByRole('row', { name: /Sylt-03/ })).toContainText('R1A')
+  // Der Status hat keine eigene Spalte mehr: ohne Auswertung stand darin
+  // wortgleich dasselbe wie unter "Ergebnis".
+  await expect(page.getByRole('row', { name: /Berlin-01/ })).toContainText('nicht ausgewertet')
+})
+
+test('eine veraltete Auswertung ist in der Liste als solche erkennbar', async ({ page }) => {
+  await seed(page, [{ sampleId: 'Sylt-03', result: 'R1A', status: 'stale', species: ['Ammophila arenaria'] }])
+  await page.goto('/#/plots')
   const zeile = page.getByRole('row', { name: /Sylt-03/ })
   await expect(zeile).toContainText('R1A')
-  await expect(zeile).toContainText('ausgewertet')
-  await expect(page.getByRole('row', { name: /Berlin-01/ })).toContainText('nicht ausgewertet')
+  // Ohne diesen Zusatz sähe ein veraltetes Ergebnis aus wie ein gültiges.
+  await expect(zeile).toContainText('veraltet')
 })
 
 test('das Fragezeichen wird ausgeschrieben', async ({ page }) => {

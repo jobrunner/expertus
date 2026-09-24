@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"net/http"
+	"sort"
 	"strings"
 
 	designsystem "github.com/jobrunner/fieldworksdiary-designsystem"
@@ -82,6 +83,10 @@ func designSystemJSHandler() http.Handler {
 // das JavaScript muss diese Bauregel nicht kennen.
 var verwendeteIcons = map[string]icons.Icon{
 	"standort": icons.MitKlasse(icons.Standort(), "icon"),
+	// Entfernt eine Art aus der Liste. Als Symbol statt als Wort, weil der
+	// Knopf sonst auf einem Telefon eine ganze Zeile je Art belegt; der
+	// zugängliche Name steht am Knopf und nennt die Art.
+	"schliessen": icons.MitKlasse(icons.Schliessen(), "icon"),
 }
 
 // iconsJSHandler liefert die gebrauchten Symbole als ES-Modul mit
@@ -105,7 +110,17 @@ var verwendeteIcons = map[string]icons.Icon{
 func iconsJSHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var b strings.Builder
-		for _, name := range []string{"standort"} {
+		// Über die Namen aus verwendeteIcons, nicht über eine zweite Liste:
+		// die stand hier fest verdrahtet, und ein neu eingetragenes Symbol
+		// wurde dadurch nie ausgeliefert — der Import im Frontend schlug
+		// fehl und die ganze Anwendung blieb leer. Sortiert, damit die
+		// Ausgabe bei gleichem Inhalt gleich bleibt.
+		namen := make([]string, 0, len(verwendeteIcons))
+		for name := range verwendeteIcons {
+			namen = append(namen, name)
+		}
+		sort.Strings(namen)
+		for _, name := range namen {
 			markup, _ := json.Marshal(string(verwendeteIcons[name]))
 			b.WriteString("export const ")
 			b.WriteString(name)

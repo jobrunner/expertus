@@ -79,7 +79,7 @@ test('jede Zelle der gestapelten Liste nennt ihre Spalte', async ({ page }) => {
   // Bezug — "12" allein sagt nicht, dass es Arten sind.
   const zellen = page.locator('table.table-stack tbody td')
   await expect(zellen.first()).toHaveAttribute('data-label', 'Sample-ID')
-  await expect(zellen.nth(3)).toHaveAttribute('data-label', 'Arten')
+  await expect(zellen.nth(2)).toHaveAttribute('data-label', 'Ergebnis')
 })
 
 test('die Artenliste bleibt auf Telefonbreite in ihrem Rahmen', async ({ page }) => {
@@ -89,9 +89,70 @@ test('die Artenliste bleibt auf Telefonbreite in ihrem Rahmen', async ({ page })
   await page.getByRole('listbox').getByRole('option').first().click()
   // Der lange Name steht vollständig in seiner Zelle, nicht mitten im Wort
   // gebrochen — und die Zelle trägt ihre Spaltenüberschrift.
+  // Der Name steht vollständig da; das hochgestellte Zeichen dahinter
+  // nennt die Herkunft (aus Vorschlag / von Hand).
   const artzelle = page.locator('td[data-label="Art"]')
-  await expect(artzelle).toHaveText('Ammophila arenaria subsp. arundinacea')
+  await expect(artzelle).toContainText('Ammophila arenaria subsp. arundinacea')
 
   expect(await ueberlaeufer(page)).toEqual([])
   expect(await rolltWaagerecht(page)).toBeNull()
+})
+
+// Auf Telefonbreite sind beide Listen dicht gesetzt: eine Art ist eine
+// Zeile, ein Plot zwei. Vorher brauchte eine Art vier Zeilen und 175 px,
+// ein Plot sechs — bei einem halben Tag im Gelände scrollt man dadurch
+// durch Formulare, statt eine Liste zu überblicken.
+test('eine Art ist auf Telefonbreite eine Zeile', async ({ page }) => {
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  for (const name of ['Festuca ovina', 'Carex arenaria', 'Salsola kali']) {
+    const feld = page.getByLabel('Art suchen')
+    await feld.fill(name)
+    await feld.press('Enter')
+  }
+  const zeilen = page.locator('.arten-liste tbody tr')
+  await expect(zeilen).toHaveCount(3)
+
+  const hoehen = await zeilen.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)))
+  // 2,75 rem ist die Mindestzielfläche für Auswahl und Knopf (WCAG 2.5.8);
+  // darunter geht es nicht, viel darüber soll es nicht gehen.
+  for (const h of hoehen) expect(h).toBeLessThan(80)
+})
+
+test('die Deckung bleibt in der dichten Zeile bedienbar', async ({ page }) => {
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  const feld = page.getByLabel('Art suchen')
+  await feld.fill('Festuca ovina')
+  await feld.press('Enter')
+
+  await page.getByLabel('Deckung von Festuca ovina').selectOption('3')
+  await expect(page.getByLabel('Deckung von Festuca ovina')).toHaveValue('3')
+  // Der Entfernen-Knopf trägt nur noch ein Symbol — sein zugänglicher Name
+  // muss weiterhin die Art nennen, sonst sind zwölf Knöpfe nicht zu
+  // unterscheiden.
+  await expect(page.getByRole('button', { name: 'Festuca ovina entfernen' })).toBeVisible()
+})
+
+test('ein Plot ist auf Telefonbreite zwei Zeilen', async ({ page }) => {
+  await page.addInitScript(() => {
+    const plots = Array.from({ length: 5 }, (_, i) => ({
+      sampleId: `Sylt-Dünental-0${i + 1}`, updatedAt: `2026-09-1${i}T10:00:00.000Z`,
+      lat: 54.9, lon: 8.31, speciesCount: 9, result: i % 2 ? 'N1A' : null,
+      status: i % 2 ? 'ok' : 'none', speciesNames: [],
+    }))
+    localStorage.setItem('expertus.index', JSON.stringify(plots))
+    for (const p of plots) localStorage.setItem('expertus.plot.' + p.sampleId, JSON.stringify({ ...p, species: [], scale: 'bb-classic' }))
+  })
+  await page.goto('/#/plots')
+  const zeilen = page.locator('.plot-liste tbody tr')
+  await expect(zeilen).toHaveCount(5)
+
+  const hoehen = await zeilen.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)))
+  for (const h of hoehen) expect(h).toBeLessThan(90)
+
+  // Koordinate und Artenzahl stehen nicht mehr in der Übersicht: sie sind
+  // erst im Plot selbst von Belang und kosteten je Eintrag zwei Zeilen.
+  await expect(page.locator('.plot-liste')).not.toContainText('54.9')
+  await expect(page.locator('.plot-liste thead')).not.toContainText('Arten')
 })

@@ -1,6 +1,6 @@
 // Liste und Suche. Speist sich aus dem Index, nicht aus den Plots selbst.
 import { el, clear, stapelbar } from '../dom.js'
-import { formatCoord, formatDate, resultLabel, statusLabel } from '../format.js'
+import { formatDate, resultLabel, statusLabel } from '../format.js'
 import { hashFor } from '../router.js'
 
 const STATUS_OPTIONEN = [
@@ -12,22 +12,43 @@ const STATUS_OPTIONEN = [
 ]
 
 
+// Die Übersicht beantwortet eine Frage: welchen Plot öffne ich? Dafür
+// genügen Kennung, Datum und Ergebnis.
+//
+// Koordinate und Artenzahl standen früher hier und sind weggefallen — sie
+// sind erst im Plot selbst von Belang, kosteten aber je Eintrag zwei
+// Zeilen. Ebenso die Spalte "Status": "nicht ausgewertet" stand darin
+// wortgleich neben demselben Text unter "Ergebnis". Aus sechs Zeilen je
+// Plot werden damit zwei.
 function body(treffer, storage) {
   if (!storage.list().length) return el('p', { text: 'Noch kein Plot erfasst.' })
   if (!treffer.length) return el('p', { text: 'Kein Plot passt zur Suche.' })
-  return el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
-    el('thead', {}, el('tr', {}, ['Sample-ID', 'Datum', 'Koordinate', 'Arten', 'Ergebnis', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
+  return el('div', { class: 'table-wrap' }, stapelbar(el('table', { class: 'plot-liste' }, [
+    el('thead', {}, el('tr', {}, ['Sample-ID', 'Datum', 'Ergebnis'].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, treffer.map((e) =>
       el('tr', {}, [
         el('td', {}, el('a', { href: hashFor({ name: 'plot', sampleId: e.sampleId }), text: e.sampleId })),
         el('td', { text: formatDate(e.updatedAt) }),
-        el('td', { text: `${formatCoord(e.lat)} / ${formatCoord(e.lon)}` }),
-        el('td', { text: String(e.speciesCount) }),
-        el('td', { text: resultLabel(e.result) }),
-        el('td', { text: statusLabel(e.status) }),
+        // Der Status steckt im Ergebnis: ohne Auswertung steht dort
+        // "nicht ausgewertet", eine veraltete wird als solche benannt.
+        // Ein noch fehlendes Ergebnis steht gedämpft: "nicht ausgewertet"
+        // ist länger als jeder Code und zöge sonst mehr Aufmerksamkeit auf
+        // sich als die Plots, die tatsächlich eines haben.
+        el('td', { class: ergebnisKlasse(e), text: ergebnisText(e) }),
       ]),
     )),
   ])))
+}
+
+function ergebnisKlasse(e) {
+  if (e.status === 'stale' || e.status === 'error') return 'warn'
+  return e.result ? null : 'muted'
+}
+
+function ergebnisText(e) {
+  if (e.status === 'stale') return `${resultLabel(e.result)} · ${statusLabel('stale')}`
+  if (e.status === 'error') return statusLabel('error')
+  return resultLabel(e.result)
 }
 
 // Jedes Bedienelement bekommt ein echtes <label>: aria-label allein
