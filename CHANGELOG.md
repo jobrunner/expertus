@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/jobrunner/expertus/compare/v0.2.3...v0.3.0) (2026-09-24)
+
+
+### Features
+
+* **habitat:** show what situs knows about the determined habitat type ([d1a0831](https://github.com/jobrunner/expertus/commit/d1a08311697ad92d85edb0d970b06400a1ab41d1))
+
+
+### Bug Fixes
+
+* **ui:** make both lists usable on a phone ([c9f7c87](https://github.com/jobrunner/expertus/commit/c9f7c870cb364cd68a95527fdb1d6998c25954b4))
+
 ## [0.2.3](https://github.com/jobrunner/expertus/compare/v0.2.2...v0.2.3) (2026-09-24)
 
 
