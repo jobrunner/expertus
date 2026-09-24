@@ -1,7 +1,7 @@
 // Die Maske: Standort, Kopfdaten und die eingehängten Abschnitte für Arten
 // und Auswertung. Kopfdaten werden nebenläufig geholt — pending blockiert
 // nur den Kopfdaten-Abschnitt, nie die Maske.
-import { el, clear, preserveFocus, svgIcon } from '../dom.js'
+import { el, clear, preserveFocus, svgIcon, stapelbar } from '../dom.js'
 import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS } from '../header-map.js'
 import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
 import { originLabel } from '../format.js'
@@ -295,10 +295,10 @@ function kopfdaten(plot, pending, actions) {
     pending ? el('p', { class: 'muted', text: 'Kopfdaten werden geholt …' }) : null,
     // Eine breite Tabelle rollt in ihrem eigenen Kasten; die Seite selbst
     // darf nicht waagerecht rollen (WCAG 1.4.10).
-    el('div', { class: 'table-wrap' }, el('table', {}, [
+    el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
       el('thead', {}, el('tr', {}, ['Feld', 'Wert', 'Herkunft'].map((t) => el('th', { scope: 'col', text: t })))),
       el('tbody', {}, HEADER_FIELDS.map((f) => zeile(plot, f, actions))),
-    ])),
+    ]))),
   ])
 }
 

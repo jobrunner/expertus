@@ -1,5 +1,5 @@
 // Liste und Suche. Speist sich aus dem Index, nicht aus den Plots selbst.
-import { el, clear } from '../dom.js'
+import { el, clear, stapelbar } from '../dom.js'
 import { formatCoord, formatDate, resultLabel, statusLabel } from '../format.js'
 import { hashFor } from '../router.js'
 
@@ -15,7 +15,7 @@ const STATUS_OPTIONEN = [
 function body(treffer, storage) {
   if (!storage.list().length) return el('p', { text: 'Noch kein Plot erfasst.' })
   if (!treffer.length) return el('p', { text: 'Kein Plot passt zur Suche.' })
-  return el('div', { class: 'table-wrap' }, el('table', {}, [
+  return el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
     el('thead', {}, el('tr', {}, ['Sample-ID', 'Datum', 'Koordinate', 'Arten', 'Ergebnis', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, treffer.map((e) =>
       el('tr', {}, [
@@ -27,7 +27,7 @@ function body(treffer, storage) {
         el('td', { text: statusLabel(e.status) }),
       ]),
     )),
-  ]))
+  ])))
 }
 
 // Jedes Bedienelement bekommt ein echtes <label>: aria-label allein

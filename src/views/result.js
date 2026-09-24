@@ -2,7 +2,7 @@
 // aufklappbare Anhang, der zeigt, wie das Ergebnis zustande kam. Kein
 // eigener Bildschirm — Nachjustieren an der Artenliste bleibt ein
 // Knopfdruck, keine Navigation.
-import { el } from '../dom.js'
+import { el, stapelbar } from '../dom.js'
 import { resultLabel, statusLabel } from '../format.js'
 
 export function renderResultSection({ plot, actions, store }) {
@@ -79,17 +79,17 @@ function anhang(ev) {
     el('h4', { text: 'Treffer' }),
     el('p', { text: gewinnerBegruendung(res) }),
     res.truncatedAt10 ? el('p', { class: 'muted', text: 'Das Original hätte diese Liste bei zehn Treffern abgeschnitten.' }) : null,
-    el('table', {}, [
+    stapelbar(el('table', {}, [
       el('thead', {}, el('tr', {}, ['Code', 'Regel', 'Priorität'].map((t) => el('th', { scope: 'col', text: t })))),
       el('tbody', {}, res.matches.map((m) => el('tr', {}, [
         el('td', { text: m.code }),
         el('td', { text: m.variant ?? '—' }),
         el('td', { text: `Priorität ${m.priority}` }),
       ]))),
-    ]),
+    ])),
 
     el('h4', { text: 'Namensauflösung' }),
-    el('table', {}, [
+    stapelbar(el('table', {}, [
       el('thead', {}, el('tr', {}, ['Eingabe', 'nach Backbone', 'final', 'Status'].map((t) => el('th', { scope: 'col', text: t })))),
       el('tbody', {}, res.resolution.map((s) => el('tr', {}, [
         el('td', { text: s.input }),
@@ -97,7 +97,7 @@ function anhang(ev) {
         el('td', { text: s.final }),
         el('td', { class: s.resolved ? 'muted' : 'warn', text: s.resolved ? 'aufgelöst' : 'unaufgelöst' }),
       ]))),
-    ]),
+    ])),
     res.resolution.some((s) => !s.resolved)
       ? el('p', { class: 'warn', text: 'Ein unaufgelöster Name ist nicht folgenlos: er gehört zu keiner Gruppe, zählt weiterhin in die Gesamtdeckung und kann damit Dominanztests kippen.' })
       : null,

@@ -35,15 +35,16 @@ button {
   font-weight: 600;
 }
 
-/* Kein Text in Bildern, keine festen Höhen: bei 200 % Textgröße darf
-   nichts abgeschnitten werden und die Seite darf nicht waagerecht rollen
-   (WCAG 1.4.4/1.4.10). Das Design-System setzt table/th/td bereits,
-   table-layout: fixed und overflow-wrap fehlen dort — Expertus' Spalten
-   (Artname, Plot-ID) brauchen beides, um nicht über ihre Breite zu
-   wachsen. */
-table {
-  table-layout: fixed;
-}
+/* Lange Artnamen und Plot-Kennungen dürfen ihre Spalte nicht sprengen.
+   overflow-wrap bricht sie am Wortende um.
+
+   Früher stand hier zusätzlich table-layout: fixed, damit bei 200 %
+   Textgröße nichts über die Breite wächst. Die Absicht war richtig, die
+   Wirkung auf einem Telefon nicht: feste Spaltenbreiten teilen 361 Pixel
+   unter sechs Spalten auf, und dann bricht der Umbruch mitten durchs Wort
+   ("Koor/dinat/e", "ausge/werte/t") und Knöpfe wachsen aus der Karte
+   heraus. Stattdessen stapeln die Tabellen sich jetzt unterhalb von 40rem
+   zu Blöcken — .table-stack aus dem Design-System. */
 th,
 td {
   overflow-wrap: break-word;
