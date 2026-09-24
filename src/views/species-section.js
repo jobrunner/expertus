@@ -1,7 +1,7 @@
 // Der Artenabschnitt der Maske: Vorschlagssuche (ARIA-Combobox über die
 // des Design-Systems, siehe /assets/designsystem.js) und die erfasste
 // Liste mit Deckung je Skala.
-import { el } from '../dom.js'
+import { el, stapelbar } from '../dom.js'
 import { classesFor, SCALES } from '../cover.js'
 import { formatCover } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
@@ -75,7 +75,7 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
 
 function tabelle(plot, actions) {
   if (!plot.species.length) return el('p', { text: 'Noch keine Art erfasst.' })
-  return el('table', {}, [
+  return stapelbar(el('table', {}, [
     el('thead', {}, el('tr', {}, ['Art', 'Deckung', 'Erfassung', ''].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, plot.species.map((s, i) => el('tr', {}, [
       el('td', { text: s.name }),
@@ -83,7 +83,7 @@ function tabelle(plot, actions) {
       el('td', { class: 'muted', text: s.entry === 'suggest' ? 'aus Vorschlag' : 'von Hand' }),
       el('td', {}, el('button', { type: 'button', class: 'btn btn-secondary', text: 'entfernen', 'aria-label': `${s.name} entfernen`, onClick: () => actions.removeSpecies(i) })),
     ]))),
-  ])
+  ]))
 }
 
 // Zwanzig Zeilen mit zwanzig gleich benannten Deckungsfeldern wären ohne

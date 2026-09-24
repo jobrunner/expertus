@@ -100,3 +100,25 @@ export function preserveFocus(container, render) {
     }
   })
 }
+
+// Bereitet eine Tabelle für schmale Schirme vor: .table-stack aus dem
+// Design-System stapelt die Zeilen unterhalb von 40rem zu Blöcken und stellt
+// jeder Zelle ihre Spaltenüberschrift voran — die kommt aus data-label.
+//
+// Die Beschriftungen werden hier aus dem thead abgelesen statt an jeder
+// Zelle wiederholt. Zweimal geschrieben liefen sie über kurz oder lang
+// auseinander, und in der gestapelten Ansicht stünde dann an der Zelle
+// etwas anderes als in der Kopfzeile.
+//
+// Zellen ohne zugehörige Überschrift — etwa die mit dem Entfernen-Knopf,
+// deren Spalte absichtlich leer heißt — bleiben ohne Vorspann.
+export function stapelbar(table) {
+  const kopf = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim())
+  for (const zeile of table.querySelectorAll('tbody tr')) {
+    ;[...zeile.children].forEach((zelle, i) => {
+      if (zelle.tagName === 'TD' && kopf[i]) zelle.setAttribute('data-label', kopf[i])
+    })
+  }
+  table.classList.add('table-stack')
+  return table
+}
