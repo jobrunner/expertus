@@ -34,8 +34,10 @@ make check    # Pre-Merge-Gate: test + a11y
 | habitatus | Plot → EUNIS-Habitat     | `Habitatus (ESy-Portierung)`                                  |
 | situs     | Habitattyp → Hintergrund | `Situs mit EUNIS-Typologien, Syntaxa und Crosswalks`          |
 
-Die Basis-URLs stehen nicht im Quelltext, sondern in `/config.json`; im
-Container erzeugt der Entrypoint sie aus Umgebungsvariablen:
+Die Basis-URLs stehen nicht im Quelltext. Der Go-Server liest sie beim Start
+aus Umgebungsvariablen und liefert sie unter `/config.json` aus, das die
+Anwendung im Browser als Erstes holt. Ein Entrypoint-Skript gibt es nicht —
+der Container startet das Binary unmittelbar.
 
 | Variable               | Dienst    | Pflicht |
 | ---------------------- | --------- | ------- |
@@ -44,9 +46,14 @@ Container erzeugt der Entrypoint sie aus Umgebungsvariablen:
 | `HOSTUS_BASE_URL`      | hostus    | ja      |
 | `SITUS_BASE_URL`       | situs     | nein    |
 
-Fehlt eine der drei Pflichtadressen, startet die Anwendung gar nicht erst —
-ein stiller Standardwert liefe gegen den falschen Dienst, und das fiele erst
-am falschen Ergebnis auf.
+Fehlt eine der drei Pflichtadressen, **startet der Server dennoch** und
+antwortet auf allen Routen; nur nennt `/config.json` den betroffenen Dienst
+dann nicht. Abgelehnt wird erst im Browser: Die Anwendung prüft die
+Konfiguration beim Start und zeigt statt der Maske die Meldung
+`config.json unvollständig: ortusBaseUrl`.
+
+Dass dort kein Standardwert einspringt, ist Absicht — er liefe gegen den
+falschen Dienst, und das fiele erst am falschen Ergebnis auf.
 
 **situs ist als einziger Dienst freiwillig.** Er liefert die
 Hintergrundinformationen zu einem bestimmten Habitat: Name und Beschreibung
