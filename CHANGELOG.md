@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/jobrunner/expertus/compare/v0.2.2...v0.2.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* **ui:** stack tables instead of squeezing them on phones ([535a449](https://github.com/jobrunner/expertus/commit/535a449644d45915f851a241ac91240da842080b))
+
 ## [0.2.2](https://github.com/jobrunner/expertus/compare/v0.2.1...v0.2.2) (2026-09-20)
 
 
