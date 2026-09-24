@@ -84,3 +84,72 @@ nav[aria-label='Hauptnavigation'] {
 .toolbar .form-group {
   margin-bottom: 0;
 }
+
+/* --- Listen auf Telefonbreite --- */
+
+/* .table-stack aus dem Design-System macht aus jeder Zelle eine eigene
+   Zeile mit Beschriftung. Für eine Tabelle mit wenigen Zeilen ist das
+   richtig; für Listen, die im Gelände lang werden, ist es zu geschwätzig:
+   die Artenliste brauchte so 175 Pixel je Art, bei zwölf Arten 1155.
+   Beide Listen bekommen deshalb ein eigenes, dichteres Raster. */
+
+@media (max-width: 40rem) {
+  /* Eine Art ist eine Zeile: Name, Deckung, Entfernen. */
+  .arten-liste tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+  }
+
+  .arten-liste tbody td {
+    display: block;
+    padding: 0;
+  }
+
+  /* Die Beschriftungen aus data-label entfallen: in einer einzeiligen
+     Darstellung ist die Spalte aus der Stellung ablesbar, und dreimal
+     "Art / Deckung" je Zeile wäre nur Rauschen. Für Hilfsmittel bleibt
+     die Tabellensemantik samt Kopfzeile erhalten. */
+  .arten-liste tbody td::before {
+    content: none;
+  }
+
+  /* Der ausgeschriebene Deckungswert steht schon in der Auswahl daneben. */
+  .arten-liste .deckungswert {
+    display: none;
+  }
+
+  /* Ein Plot ist zwei Zeilen: Kennung und Ergebnis nebeneinander, das
+     Datum darunter. */
+  .plot-liste tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "kennung ergebnis"
+      "datum   datum";
+    gap: 0.125rem 0.75rem;
+    padding: 0.625rem 0;
+  }
+
+  .plot-liste tbody td {
+    display: block;
+    padding: 0;
+  }
+
+  .plot-liste tbody td::before {
+    content: none;
+  }
+
+  .plot-liste tbody td:nth-child(1) { grid-area: kennung; }
+  .plot-liste tbody td:nth-child(2) { grid-area: datum; font-size: 0.875rem; color: var(--text-muted); }
+  .plot-liste tbody td:nth-child(3) { grid-area: ergebnis; }
+}
+
+/* Die Herkunft einer Art — aus Vorschlag oder von Hand — als Zeichen am
+   Namen statt als eigene Spalte. */
+.herkunft {
+  margin-left: 0.125rem;
+  cursor: help;
+}
