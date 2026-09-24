@@ -14,9 +14,13 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /expertus ./cmd/expertu
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /expertus /expertus
 
+# SITUS_BASE_URL ist als einzige dieser Adressen freiwillig: ohne sie fehlt
+# nur der Abschnitt mit den Hintergrundinformationen zum erkannten Habitat.
+# Leer gesetzt bleibt der Dienst aus /config.json und aus der CSP heraus.
 ENV ORTUS_BASE_URL=https://ortus.fieldworksdiary.org \
     HABITATUS_BASE_URL=https://habitatus.fieldworksdiary.org \
     HOSTUS_BASE_URL=https://hostus.fieldworksdiary.org \
+    SITUS_BASE_URL=https://situs.fieldworksdiary.org \
     PORT=8080
 
 USER nonroot
