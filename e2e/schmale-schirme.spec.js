@@ -156,3 +156,31 @@ test('ein Plot ist auf Telefonbreite zwei Zeilen', async ({ page }) => {
   await expect(page.locator('.plot-liste')).not.toContainText('54.9')
   await expect(page.locator('.plot-liste thead')).not.toContainText('Arten')
 })
+
+test('die Felder des Standortformulars stehen in gleichem Abstand', async ({ page }) => {
+  // Breiten- und Längengrad liegen im .koord-gitter, die übrigen Felder
+  // daneben in einfachen .form-group. Solange das Gitter seinen gap UND
+  // die Feldgruppen darin ihren margin-bottom hatten, addierten sich beide,
+  // sobald das Gitter auf eine Spalte umbricht: zwischen Lat und Lon stand
+  // dann 1 rem mehr Luft als zwischen allen anderen Feldern — ausgerechnet
+  // zwischen den beiden, die zusammengehören.
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  await expect(page.getByLabel('Längengrad (Lon)')).toBeVisible()
+
+  const luecken = await page.evaluate(() => {
+    const ids = ['sample', 'standort-system', 'standort-y', 'standort-x']
+    const felder = ids.map((id) => document.getElementById(id))
+    const out = []
+    for (let i = 0; i < felder.length - 1; i += 1) {
+      out.push(Math.round(felder[i + 1].getBoundingClientRect().top - felder[i].getBoundingClientRect().bottom))
+    }
+    return out
+  })
+
+  // Alle Abstände innerhalb von 4 px: Unterschiede darüber sind als
+  // ungleicher Rhythmus sichtbar.
+  const kleinste = Math.min(...luecken)
+  const groesste = Math.max(...luecken)
+  expect(groesste - kleinste).toBeLessThanOrEqual(4)
+})
