@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/jobrunner/expertus/compare/v0.3.0...v0.3.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **ui:** even spacing in the location form ([6b8e827](https://github.com/jobrunner/expertus/commit/6b8e827529a53a16b686e6b08cc57f09c0cdf278))
+
 ## [0.3.0](https://github.com/jobrunner/expertus/compare/v0.2.3...v0.3.0) (2026-09-24)
 
 
