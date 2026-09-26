@@ -112,7 +112,12 @@ function angaben(d) {
 function syntaxaListe(syntaxa) {
   if (!syntaxa?.length) return null
   return el('details', { class: 'akkordeon' }, [
-    el('summary', { text: `Pflanzengesellschaften (${syntaxa.length})` }),
+    // "des Habitattyps" ausgeschrieben, mit demselben Wort wie die
+    // Artenliste darüber: die Liste steht unter dem Ergebnis der
+    // Auswertung, und ohne den Zusatz liest sie sich wie die
+    // Gesellschaften der erfassten Aufnahme statt wie die des bestimmten
+    // Typs.
+    el('summary', { text: `Pflanzengesellschaften des Habitattyps (${syntaxa.length})` }),
     el('div', { class: 'akkordeon-inhalt' },
       el('ul', {}, syntaxa.map((s) => el('li', {}, [
         el('span', { text: s.name }),

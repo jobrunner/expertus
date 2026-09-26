@@ -35,7 +35,7 @@ test('nach der Auswertung stehen Name und Beschreibung des Habitattyps da', asyn
 
 test('die Pflanzengesellschaften stehen in einem Akkordeon', async ({ page }) => {
   await auswerten(page)
-  const akkordeon = page.locator('details', { hasText: 'Pflanzengesellschaften' })
+  const akkordeon = page.locator('details', { hasText: 'Pflanzengesellschaften des Habitattyps' })
   await expect(akkordeon).toBeVisible()
   // Zugeklappt, bis der Inhalt gebraucht wird.
   await expect(akkordeon).not.toHaveAttribute('open', '')
