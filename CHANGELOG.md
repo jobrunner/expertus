@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/jobrunner/expertus/compare/v0.4.0...v0.5.0) (2026-09-26)
+
+
+### Features
+
+* **names:** set scientific names in italics, keep ranks upright ([4c24c88](https://github.com/jobrunner/expertus/commit/4c24c880221baf392f7ecf81e78665547f2119d6))
+
+
+### Bug Fixes
+
+* **ui:** five things found while using it in the field ([49b9b0d](https://github.com/jobrunner/expertus/commit/49b9b0d6bc7c23b7540a6e63c76c401d1ec6e93b))
+
 ## [0.4.0](https://github.com/jobrunner/expertus/compare/v0.3.1...v0.4.0) (2026-09-26)
 
 
