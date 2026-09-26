@@ -35,6 +35,12 @@ function percent(n) {
   return `${String(n).replace('.', ',')} %`
 }
 
+// Derselbe Ausdruck, öffentlich: die Klassenauswahl nennt den Mittelwert
+// ihrer Klasse und darf ihn nicht in einer zweiten Schreibweise zeigen.
+export function formatPercent(n) {
+  return percent(n)
+}
+
 // Neben einer Auswahl, die die Klasse bereits zeigt, ist die Klasse im Text
 // eine Dopplung: "[2b ▾] 2b (5,5 %)". Angezeigt wird deshalb nur, was die
 // Auswahl nicht sagt — der Prozentwert, den die Klasse bedeutet.

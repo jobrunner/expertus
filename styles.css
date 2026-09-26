@@ -116,11 +116,6 @@ nav[aria-label='Hauptnavigation'] {
     content: none;
   }
 
-  /* Der ausgeschriebene Deckungswert steht schon in der Auswahl daneben. */
-  .arten-liste .deckungswert {
-    display: none;
-  }
-
   /* Ein Plot ist zwei Zeilen: Kennung und Ergebnis nebeneinander, das
      Datum darunter. */
   .plot-liste tbody tr {
@@ -212,4 +207,46 @@ nav[aria-label='Hauptnavigation'] {
 
 .auswerten-leiste > p {
   margin: 0;
+}
+
+/* --- Deckungseingabe --- */
+
+/* Minus, Zahlenfeld, Plus in einer Reihe. Die Knöpfe springen auf die
+   nächste übliche Schätzstufe; das Feld bleibt frei beschreibbar. */
+.deckungsspinner,
+.deckungsklasse-feld {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deckung-einheit,
+.deckung-ohne-klasse {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.deckungsspinner .deckungsprozent {
+  /* Breit genug für "37,5", schmal genug, damit Knöpfe und Feld in eine
+     Zeile der Artenliste passen. */
+  width: 4.5rem;
+  text-align: right;
+}
+
+/* Die Klassenauswahl trägt jetzt den Prozentwert im Eintrag ("2 (~15 %)")
+   und braucht dafür mehr Platz als für den bloßen Code. */
+.deckungsklasse {
+  min-width: 8rem;
+}
+
+@media (max-width: 40rem) {
+  /* In der dichten Artenzeile hat die Deckung nur so viel Platz, wie Name
+     und Entfernen-Knopf übrig lassen. */
+  .deckungsklasse {
+    min-width: 0;
+  }
+
+  .deckungsspinner .deckungsprozent {
+    width: 3.5rem;
+  }
 }
