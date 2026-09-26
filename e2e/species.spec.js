@@ -218,3 +218,25 @@ test('die Artensuche gibt hostus die Region des Fundorts mit', async ({ page }) 
   expect(p.get('target_space')).toBe('eurosl')
   expect(p.get('require_target_space')).toBe('true')
 })
+
+test('der Übernehmen-Knopf nimmt auch Namen ohne Vorschlag', async ({ page }) => {
+  const input = page.getByLabel('Art suchen')
+  // Ein Name, den die Vorschlagsliste nicht führt. Dass die Eingabetaste
+  // ihn trotzdem übernimmt, sieht man ihr nicht an — der Knopf sagt es.
+  await input.fill('Hieracium spec.')
+  await page.getByRole('button', { name: 'Übernehmen' }).click()
+  await expect(page.locator('td[data-label="Art"]')).toContainText('Hieracium spec.')
+  // Danach ist das Feld frei für die nächste Art.
+  await expect(input).toHaveValue('')
+})
+
+test('der Übernehmen-Knopf nimmt den hervorgehobenen Vorschlag', async ({ page }) => {
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Festuca')
+  await expect(page.getByRole('listbox')).toBeVisible()
+  await input.press('ArrowDown')
+  await page.getByRole('button', { name: 'Übernehmen' }).click()
+  // Derselbe Weg wie die Eingabetaste: der markierte Vorschlag gewinnt
+  // gegen den Freitext.
+  await expect(page.locator('td[data-label="Art"]')).toContainText('Festuca ovina')
+})

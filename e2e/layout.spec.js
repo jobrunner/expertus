@@ -7,12 +7,13 @@ test('die Abschnitte der Maske sind sichtbar getrennt', async ({ page }) => {
   // Jeder Abschnitt trägt eine eigene Fläche; ohne sie verschwimmen
   // Standort, Kopfdaten, Arten und Auswertung zu einer einzigen Kolonne.
   //
-  // Standort und Kopfdaten sind zuklappbar und deshalb <details>, die
-  // übrigen <section> — die Fläche (.card) tragen beide.
-  await expect(page.locator('main .card')).toHaveCount(4)
+  // Standort und Kopfdaten sind zuklappbar und tragen .akkordeon aus dem
+  // Design-System — dasselbe Aussehen wie in Ortus. Die übrigen sind
+  // <section class="card">. Beide setzen sich sichtbar ab.
+  await expect(page.locator('main .card, main .akkordeon')).toHaveCount(4)
 
   for (const name of ['Standort', 'Kopfdaten', 'Arten', 'Auswertung']) {
-    await expect(page.locator('main .card').filter({ hasText: name })).not.toHaveCount(0)
+    await expect(page.locator('main .card, main .akkordeon').filter({ hasText: name })).not.toHaveCount(0)
   }
 })
 
