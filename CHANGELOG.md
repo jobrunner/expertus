@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/jobrunner/expertus/compare/v0.5.0...v0.5.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **ui:** give the species search field and its button room ([ce59ab5](https://github.com/jobrunner/expertus/commit/ce59ab5b5df9d0cfe0f7d4dc5a17b89d3f9a94a0))
+
 ## [0.5.0](https://github.com/jobrunner/expertus/compare/v0.4.0...v0.5.0) (2026-09-26)
 
 
