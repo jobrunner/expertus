@@ -94,6 +94,44 @@ nav[aria-label='Hauptnavigation'] {
    Beide Listen bekommen deshalb ein eigenes, dichteres Raster. */
 
 @media (max-width: 40rem) {
+  /* Ein Kopfdatum ist zwei Zeilen: Beschriftung und Feld nebeneinander,
+     die Herkunft klein darunter.
+
+     Gestapelt stand hier je Feld vier Zeilen — "Land", "Wert", das Feld,
+     "Herkunft" —, wobei "Wert" und "Herkunft" nichts sagen, was die
+     Stellung nicht schon zeigt. Auf dem Desktop war das längst gelöst,
+     mobil nicht. */
+  .kopf-liste tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    grid-template-areas:
+      "feld     wert"
+      "herkunft herkunft";
+    align-items: center;
+    gap: 0.125rem 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .kopf-liste tbody th,
+  .kopf-liste tbody td {
+    display: block;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  /* Die Vorspänne aus data-label entfallen: In dieser Anordnung ist aus
+     der Stellung ablesbar, was Beschriftung, Wert und Herkunft ist. */
+  .kopf-liste tbody td::before {
+    content: none;
+  }
+
+  .kopf-liste tbody th[scope="row"] { grid-area: feld; }
+  .kopf-liste tbody td:nth-of-type(1) { grid-area: wert; }
+  .kopf-liste tbody td:nth-of-type(2) {
+    grid-area: herkunft;
+    font-size: 0.8125rem;
+  }
+
   /* Eine Art ist eine Zeile: Name, Deckung, Entfernen. */
   .arten-liste tbody tr {
     display: grid;
@@ -101,6 +139,12 @@ nav[aria-label='Hauptnavigation'] {
     align-items: center;
     gap: 0.5rem;
     padding: 0.25rem 0;
+  }
+
+  /* Der Artname ist das, was man liest — eine Spur größer als der Rest
+     und nicht in der Grundschriftgröße untergehend. */
+  .arten-liste tbody td:first-child {
+    font-size: 1.0625rem;
   }
 
   .arten-liste tbody td {
@@ -152,37 +196,17 @@ nav[aria-label='Hauptnavigation'] {
 /* --- Zuklappbare Abschnitte der Maske --- */
 
 /* Standort und Kopfdaten sind einmal auszufüllen und danach selten wieder
-   nötig. Als <details> treten sie zurück, ohne zu verschwinden. Die
-   Überschrift bleibt ein <h3>, damit der Abschnitt in der
-   Überschriftenliste eines Bildschirmlesers steht — optisch soll sie
-   trotzdem in der Klappzeile liegen, nicht darüber. */
-.abschnitt > summary {
+   nötig. Als <details> treten sie zurück, ohne zu verschwinden.
+
+   Rahmen, abgesetzte Kopfzeile und die Drehung des Chevrons kommen aus
+   .akkordeon im Design-System — dasselbe Aussehen wie in Ortus. Hier steht
+   nur, was Expertus zusätzlich braucht: Titel und Kurzfassung untereinander
+   statt nebeneinander. */
+.abschnitt-kopf {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  cursor: pointer;
-  /* Der Griff muss auch mit Handschuhen zu treffen sein (WCAG 2.5.8). */
-  min-height: 2.75rem;
-  /* list-style und ::-webkit-details-marker: beides entfernt das
-     browsereigene Dreieck, das sonst neben dem Chevron stünde. */
-  list-style: none;
-}
-
-.abschnitt > summary::-webkit-details-marker {
-  display: none;
-}
-
-/* Das Chevron zeigt nach unten, solange zu ist, und dreht sich beim
-   Öffnen. Die Drehung folgt prefers-reduced-motion über die allgemeine
-   Regel des Design-Systems. */
-.abschnitt > summary > .icon {
-  flex: 0 0 auto;
-  transition: transform 0.15s;
-}
-
-.abschnitt[open] > summary > .icon {
-  transform: rotate(180deg);
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
 }
 
 .abschnitt-titel {
@@ -192,10 +216,11 @@ nav[aria-label='Hauptnavigation'] {
 
 .abschnitt-zusammenfassung {
   font-size: 0.875rem;
+  font-weight: 400;
 }
 
 .abschnitt-inhalt {
-  padding-top: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
 }
 
 /* --- Auswerten-Leiste --- */
@@ -267,5 +292,34 @@ nav[aria-label='Hauptnavigation'] {
 
   .deckungsspinner .deckungsprozent {
     width: 3.5rem;
+  }
+}
+
+/* Auf sehr schmalen Geräten bleibt neben Deckungsfeld und Entfernen-Knopf
+   so wenig übrig, dass selbst "Carex arenaria" umbricht. Dann stehen Name
+   und Bedienelemente untereinander: eine Zeile mehr, aber der Name in
+   einem Stück und größer lesbar.
+
+   Die Schwelle liegt bei 24rem (384 px) und trennt damit genau die beiden
+   Geräte, um die es geht: ein iPhone SE misst 375 Pixel und bekommt die
+   zweizeilige Form, ein iPhone 14 Pro misst 393 und behält die einzeilige,
+   in der die Liste kompakter bleibt. */
+@media (max-width: 24rem) {
+  .arten-liste tbody tr {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name name"
+      "deckung entfernen";
+    gap: 0.375rem 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .arten-liste tbody td:nth-child(1) { grid-area: name; }
+  .arten-liste tbody td:nth-child(2) { grid-area: deckung; }
+  .arten-liste tbody td:nth-child(3) { grid-area: entfernen; justify-self: end; }
+
+  /* Die Klassenauswahl darf die Breite nutzen, die der Name freigibt. */
+  .arten-liste .deckungsklasse {
+    width: 100%;
   }
 }

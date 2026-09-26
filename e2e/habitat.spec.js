@@ -155,3 +155,39 @@ test('ein wieder geöffneter Plot holt die Angaben erneut', async ({ page }) => 
   await page.goto(adresse)
   await expect(page.getByRole('heading', { name: /Submediterran-subkontinentaler/ })).toBeVisible()
 })
+
+test('wissenschaftliche Namen stehen kursiv, Autoren aufrecht', async ({ page }) => {
+  await auswerten(page)
+  await page.getByText(/Pflanzengesellschaften des Habitattyps/).click()
+
+  // Die Epitheta kursiv, der Autor nicht: er ist kein Namensbestandteil im
+  // Sinne der Nomenklatur.
+  const eintrag = page.locator('details', { hasText: 'Pflanzengesellschaften' }).locator('li').first()
+  await expect(eintrag.locator('i')).toHaveText(['Cirsio-Brachypodion', 'pinnati'])
+  await expect(eintrag).toContainText('Hadač et Klika 1944')
+  const autorKursiv = await eintrag.evaluate((e) => [...e.querySelectorAll('i')].some((i) => i.textContent.includes('Hadač')))
+  expect(autorKursiv).toBe(false)
+
+  // Der Rang stand früher als "· alliance" daneben und sagt im Gelände
+  // nichts, was die Liste nicht schon einordnet.
+  await expect(eintrag).not.toContainText('alliance')
+})
+
+test('Rangbezeichnungen in Artnamen bleiben aufrecht', async ({ page }) => {
+  await stubServices(page, {
+    situs: {
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        typology: 'eunis@2021', code: 'R1A', level: 3,
+        name_en: 'X', description: { value: 'Y', source: 'z' },
+        species: { diagnostic: [{ concept_id: 'a', verbatim_name: 'Festuca ovina subsp. hirtula', role: 'diagnostic', fidelity: 9 }], constant: [], dominant: [] },
+        syntaxa: [], crosswalks: [],
+      }),
+    },
+  })
+  await auswerten(page)
+  await page.getByText(/Arten des Habitattyps/).click()
+  const eintrag = page.locator('details', { hasText: 'Arten des Habitattyps' }).locator('li').first()
+  // "subsp." benennt den Rang und gehört nicht zum kursiven Namen.
+  await expect(eintrag.locator('i')).toHaveText(['Festuca', 'ovina', 'hirtula'])
+})

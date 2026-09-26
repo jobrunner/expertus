@@ -184,3 +184,70 @@ test('die Felder des Standortformulars stehen in gleichem Abstand', async ({ pag
   const groesste = Math.max(...luecken)
   expect(groesste - kleinste).toBeLessThanOrEqual(4)
 })
+
+test.describe('iPhone SE', () => {
+  test.use({ viewport: { width: 375, height: 667 } })
+
+  test('auf 375 px steht der Artname ungebrochen über den Bedienelementen', async ({ page }) => {
+    await page.goto('/#/plots')
+    await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+    const feld = page.getByLabel('Art suchen')
+    await feld.fill('Carex arenaria')
+    await feld.press('Enter')
+
+    // Neben Deckungsfeld und Entfernen-Knopf blieb bei 375 px so wenig
+    // übrig, dass selbst ein kurzer Name umbrach. Zweizeilig bekommt er
+    // die volle Breite.
+    const zelle = page.locator('td[data-label="Art"]')
+    const zeilen = await zelle.evaluate((e) => {
+      const hoehe = e.getBoundingClientRect().height
+      const zeilenhoehe = parseFloat(getComputedStyle(e).lineHeight)
+      return Math.round(hoehe / zeilenhoehe)
+    })
+    expect(zeilen).toBe(1)
+  })
+
+  test('auf 375 px bleiben die Kopfdaten zweizeilig statt vierzeilig', async ({ page }) => {
+    await page.goto('/#/plots')
+    await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+    await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+    await page.getByLabel('Längengrad (Lon)').fill('13.405')
+    await page.getByLabel('Längengrad (Lon)').blur()
+    const kopf = page.locator('details.abschnitt', { has: page.getByText('Kopfdaten', { exact: true }) })
+    if (!(await kopf.evaluate((e) => e.open))) await kopf.locator('summary').click()
+
+    // Gestapelt standen hier vier Zeilen je Feld — "Land", "Wert", das
+    // Feld, "Herkunft" —, wobei "Wert" und "Herkunft" nichts sagen, was
+    // die Stellung nicht schon zeigt.
+    const vorspaenge = await page.locator('.kopf-liste tbody td').evaluateAll(
+      (els) => els.map((e) => getComputedStyle(e, '::before').content).filter((c) => c && c !== 'none'),
+    )
+    expect(vorspaenge).toEqual([])
+    const zeile = page.locator('.kopf-liste tbody tr').first()
+    const hoehe = await zeile.evaluate((e) => Math.round(e.getBoundingClientRect().height))
+    expect(hoehe).toBeLessThan(110)
+  })
+})
+
+test('ein Auswahlfeld wird während der Bedienung nicht ersetzt', async ({ page }) => {
+  // Auf iOS feuert change an einem <select> bei jeder Bewegung im Picker.
+  // Wird das Element dabei ersetzt, verliert der Picker seinen Bezug: die
+  // Auswahl scheint zu greifen, das Menü öffnet sich erneut, und man muss
+  // ein zweites Mal wählen.
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  const feld = page.getByLabel('Art suchen')
+  await feld.fill('Festuca ovina')
+  await feld.press('Enter')
+
+  await page.evaluate(() => { window.__vorher = document.getElementById('deckung-0') })
+  const auswahl = page.getByRole('combobox', { name: 'Deckung von Festuca ovina' })
+  await auswahl.focus()
+  await auswahl.selectOption('3')
+  expect(await page.evaluate(() => document.getElementById('deckung-0') === window.__vorher)).toBe(true)
+
+  // Nach dem Verlassen wird der Aufbau nachgeholt — der Wert steht.
+  await feld.focus()
+  await expect(page.getByRole('combobox', { name: 'Deckung von Festuca ovina' })).toHaveValue('3')
+  expect(await page.evaluate(() => document.getElementById('deckung-0') !== window.__vorher)).toBe(true)
+})

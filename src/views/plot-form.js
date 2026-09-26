@@ -249,19 +249,26 @@ function abschnitt({ id, titel, zusammenfassung, erledigt, inhalt, offen }) {
   // Genauigkeit bliebe sonst keinen Augenblick stehen.
   if (!offen.has(id)) offen.set(id, !erledigt)
   const istOffen = offen.get(id)
+  // Aufbau wie die Akkordeons in Ortus: Titel oben, die Kurzfassung
+  // darunter, das Chevron rechts außen. .akkordeon kommt aus dem
+  // Design-System und bringt Rahmen, abgesetzte Kopfzeile und die Drehung
+  // des Chevrons mit — Expertus soll hier nicht anders aussehen als die
+  // Geschwisterdienste.
   const griff = el('summary', {}, [
+    el('span', { class: 'abschnitt-kopf' }, [
+      // Die Überschrift bleibt eine Überschrift, auch im summary: sonst
+      // verschwindet der Abschnitt aus der Überschriftenliste, über die
+      // sich Bildschirmleser durch eine Seite bewegen. <summary> erlaubt
+      // Fließinhalt, die Klappfunktion bleibt davon unberührt.
+      el('h3', { class: 'abschnitt-titel', id, text: titel }),
+      zusammenfassung ? el('span', { class: 'muted abschnitt-zusammenfassung', text: zusammenfassung }) : null,
+    ]),
     // Das Vorgabedreieck von <details> entfällt, sobald summary als
     // Flex-Behälter gesetzt ist. Ohne eigenes Zeichen sieht man der
     // Kopfzeile nicht an, dass sie sich aufklappen lässt.
     svgIcon(chevronSymbol),
-    // Die Überschrift bleibt eine Überschrift, auch im summary: sonst
-    // verschwindet der Abschnitt aus der Überschriftenliste, über die sich
-    // Bildschirmleser durch eine Seite bewegen. <summary> erlaubt
-    // Fließinhalt, die Klappfunktion bleibt davon unberührt.
-    el('h3', { class: 'abschnitt-titel', id, text: titel }),
-    zusammenfassung ? el('span', { class: 'muted abschnitt-zusammenfassung', text: zusammenfassung }) : null,
   ])
-  const knoten = el('details', { class: 'card abschnitt', open: istOffen ? '' : null }, [
+  const knoten = el('details', { class: 'akkordeon abschnitt', open: istOffen ? '' : null }, [
     griff,
     el('div', { class: 'abschnitt-inhalt' }, inhalt.filter(Boolean)),
   ])
@@ -270,10 +277,13 @@ function abschnitt({ id, titel, zusammenfassung, erledigt, inhalt, offen }) {
   // dann sofort "offen", und die Automatik käme nie zum Zug. Ein Klick auf
   // den Griff ist dagegen eindeutig eine Handlung des Anwenders — auch per
   // Tastatur, denn Enter und Leertaste lösen ihn aus.
-  griff.addEventListener('click', () => {
-    // Der Zustand kippt erst nach diesem Ereignis.
-    queueMicrotask(() => offen.set(id, knoten.open))
-  })
+  //
+  // Gemerkt wird der Zustand NACH dem Klick, also sein Gegenteil: Die
+  // Standardaktion von <summary> schaltet open erst nach diesem Handler
+  // um. Ein queueMicrotask half nicht — er läuft ebenfalls vorher, und
+  // gemerkt wurde dann der alte Wert. Man klappte zu, und beim nächsten
+  // Neuzeichnen stand der Abschnitt wieder offen.
+  griff.addEventListener('click', () => offen.set(id, !knoten.open))
   return knoten
 }
 
@@ -369,7 +379,7 @@ function kopfdaten(plot, pending, actions, offen) {
       pending ? el('p', { class: 'muted', text: 'Kopfdaten werden geholt …' }) : null,
       // Eine breite Tabelle rollt in ihrem eigenen Kasten; die Seite selbst
       // darf nicht waagerecht rollen (WCAG 1.4.10).
-      el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
+      el('div', { class: 'table-wrap' }, stapelbar(el('table', { class: 'kopf-liste' }, [
         el('thead', {}, el('tr', {}, ['Feld', 'Wert', 'Herkunft'].map((t) => el('th', { scope: 'col', text: t })))),
         el('tbody', {}, HEADER_FIELDS.map((f) => zeile(plot, f, actions))),
       ]))),
@@ -389,7 +399,26 @@ function kopfdatenStand(plot, pending, fehlend) {
 // Komplexität trägt statt in der von renderPlotForm aufzugehen — cleanup
 // und abschnitte bleiben dagegen dort verschachtelt, weil sie das
 // veränderliche sectionCleanups direkt anfassen.
-function draw({ mount, store, actions, router, cleanupSections, abschnitte, offen }) {
+function draw(deps) {
+  // Solange ein Auswahlfeld bedient wird, wird nicht neu aufgebaut.
+  //
+  // Auf iOS feuert change an einem <select> bei jeder Bewegung im Picker,
+  // nicht erst beim Schließen. Wird das Element mitten darin ersetzt,
+  // verliert der Picker seinen Bezug: die Auswahl scheint zu greifen, das
+  // Menü öffnet sich erneut, und man muss ein zweites Mal wählen.
+  //
+  // Der Aufbau wird deshalb bis zum blur aufgeschoben. Gespeichert ist der
+  // Wert längst — change hat den Store bereits geändert; aufgeschoben wird
+  // allein die Darstellung.
+  const aktiv = document.activeElement
+  if (aktiv?.tagName === 'SELECT' && deps.mount.contains(aktiv)) {
+    aktiv.addEventListener('blur', () => draw(deps), { once: true })
+    return
+  }
+  zeichne(deps)
+}
+
+function zeichne({ mount, store, actions, router, cleanupSections, abschnitte, offen }) {
   // Ein Neuaufbau ersetzt den gesamten Einhängepunkt und würde sonst den
   // Fokus verwerfen: nach jedem Zeichen in einem Zahlenfeld läge er im
   // Nichts, und die Maske wäre über Tastatur unbenutzbar. preserveFocus

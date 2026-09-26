@@ -2,10 +2,36 @@
 // des Design-Systems, siehe /assets/designsystem.js) und die erfasste
 // Liste mit Deckung je Skala.
 import { el, stapelbar, svgIcon } from '../dom.js'
+import { wissenschaftlich } from '../namen.js'
 import { classesFor, naechsteStufe, SCALES, toPercent } from '../cover.js'
 import { formatPercent } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
 import { schliessen as schliessenSymbol } from '/assets/icons.js'
+
+// Der Knopf neben dem Suchfeld. Er nimmt denselben Weg wie die
+// Eingabetaste: den hervorgehobenen Vorschlag, sonst den eingegebenen
+// Freitext.
+//
+// mousedown mit preventDefault, nicht nur click: Ein Klick auf den Knopf
+// nähme dem Eingabefeld zuerst den Fokus, und blur schließt die
+// Vorschlagsliste — die Hervorhebung wäre weg, bevor click überhaupt
+// feuert, und übernommen würde der Freitext statt des gewählten
+// Vorschlags. Die Combobox löst dasselbe Problem bei ihren Listeneinträgen
+// genauso. click bleibt daneben stehen, weil Tastaturbedienung (Enter,
+// Leertaste) kein mousedown auslöst.
+function uebernehmenKnopf(combobox, input) {
+  const knopf = el('button', {
+    type: 'button', class: 'btn btn-secondary art-uebernehmen',
+    text: 'Übernehmen',
+    title: 'Den eingegebenen Namen übernehmen, auch ohne Vorschlag',
+  })
+  knopf.addEventListener('mousedown', (e) => e.preventDefault())
+  knopf.addEventListener('click', () => {
+    combobox.uebernehmen()
+    input.focus()
+  })
+  return knopf
+}
 
 // Der Hinweis unter einem Vorschlag. Zuvor stand hier bei jedem Treffer
 // "nicht Euro+Med" — die Prüfung dahinter konnte nie zutreffen. Jetzt
@@ -57,7 +83,18 @@ export function renderSpeciesSection({ plot, actions, hostus }) {
       el('select', { id: 'skala', onChange: (e) => actions.setScale(e.target.value) },
         Object.entries(SCALES).map(([k, v]) => el('option', { value: k, text: v.label, selected: k === plot.scale }))),
     ]),
-    el('div', { class: 'form-group combobox' }, [el('label', { for: 'art-suche', text: 'Art suchen' }), input, listbox]),
+    // Der Knopf neben dem Feld sagt, was sonst nur wüsste, wer es
+    // ausprobiert: Ein Name, den hostus nicht führt, lässt sich trotzdem
+    // übernehmen. Die Eingabetaste tut dasselbe — aber dass sie das tut,
+    // sieht man ihr nicht an.
+    el('div', { class: 'form-group combobox' }, [
+      el('label', { for: 'art-suche', text: 'Art suchen' }),
+      el('div', { class: 'art-eingabe' }, [
+        input,
+        uebernehmenKnopf(combobox, input),
+      ]),
+      listbox,
+    ]),
     hinweis,
     // Mehrfachnennung wird gewarnt, nicht zusammengeführt: habitatus
     // vereinigt Deckungen nach eigenem Verfahren (Jennings-Fischer), eine
@@ -87,7 +124,7 @@ function tabelle(plot, actions) {
   return stapelbar(el('table', { class: 'arten-liste' }, [
     el('thead', {}, el('tr', {}, ['Art', 'Deckung', ''].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, plot.species.map((s, i) => el('tr', {}, [
-      el('td', {}, [el('span', { text: s.name }), herkunft(s)]),
+      el('td', {}, [el('span', {}, wissenschaftlich(s.name)), herkunft(s)]),
       el('td', {}, deckung(plot, s, i, actions)),
       el('td', {}, entfernenKnopf(s, i, actions)),
     ]))),
