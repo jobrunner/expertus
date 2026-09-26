@@ -251,3 +251,26 @@ test('ein Auswahlfeld wird während der Bedienung nicht ersetzt', async ({ page 
   await expect(page.getByRole('combobox', { name: 'Deckung von Festuca ovina' })).toHaveValue('3')
   expect(await page.evaluate(() => document.getElementById('deckung-0') !== window.__vorher)).toBe(true)
 })
+
+test('Suchfeld und Übernehmen-Knopf kleben nicht aneinander', async ({ page }) => {
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+
+  const mass = await page.evaluate(() => {
+    const feld = document.getElementById('art-suche')
+    const knopf = document.querySelector('.art-uebernehmen')
+    const behaelter = document.querySelector('.art-eingabe')
+    const f = feld.getBoundingClientRect()
+    const k = knopf.getBoundingClientRect()
+    const nebeneinander = Math.abs(f.top - k.top) < 5
+    return {
+      // Je nach Breite steht der Knopf neben dem Feld oder darunter.
+      abstand: Math.round(nebeneinander ? k.left - f.right : k.top - f.bottom),
+      // Rechtsbündig: dort endet auch das Feld, und dorthin gehört ein
+      // abschließender Knopf.
+      randRechts: Math.round(behaelter.getBoundingClientRect().right - k.right),
+    }
+  })
+  expect(mass.abstand).toBeGreaterThanOrEqual(4)
+  expect(mass.randRechts).toBeLessThanOrEqual(1)
+})
