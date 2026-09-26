@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test'
+
+// Standort und Kopfdaten klappen zu, sobald sie erledigt sind — sie werden
+// danach selten gebraucht und hielten sonst die Artenliste weit unten fest.
+// Tests, die an die Felder darin müssen, öffnen den Abschnitt wie ein
+// Mensch es täte.
+async function oeffne(page, titel) {
+  const abschnitt = page.locator('details', { has: page.getByText(titel, { exact: true }) })
+  if (!(await abschnitt.first().evaluate((e) => e.open))) {
+    await abschnitt.first().getByText(titel, { exact: true }).click()
+  }
+}
 import { stubServices } from './helpers/stubs.js'
 
 test.beforeEach(async ({ page }) => {
@@ -25,9 +36,12 @@ test('eine eingegebene Koordinate holt die Kopfdaten', async ({ page }) => {
   // Ein Auswahlfeld hat keinen eigenen sichtbaren Textknoten für die
   // gewählte Option — geprüft wird deshalb der Feldwert selbst, nicht
   // getByText.
-  await expect(page.getByLabel('Country')).toHaveValue('Germany')
-  await expect(page.getByLabel('Ecoreg')).toHaveValue('654')
-  await expect(page.getByLabel('Coast_EEA')).toHaveValue('N_COAST')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByLabel('Land')).toHaveValue('Germany')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByLabel('Ökoregion')).toHaveValue('654')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByLabel('Küste')).toHaveValue('N_COAST')
 })
 
 test('die Herkunft jedes Kopfdatums ist sichtbar', async ({ page }) => {
@@ -35,7 +49,8 @@ test('die Herkunft jedes Kopfdatums ist sichtbar', async ({ page }) => {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByRole('row', { name: /Land/ })).toContainText('aus ortus')
 })
 
 test('ein nicht ableitbares Feld ist hervorgehoben und von Hand setzbar', async ({ page }) => {
@@ -59,12 +74,13 @@ test('ein nicht ableitbares Feld ist hervorgehoben und von Hand setzbar', async 
   await page.getByLabel('Breitengrad (Lat)').fill('54.45')
   await page.getByLabel('Längengrad (Lon)').fill('12.45')
   await page.getByLabel('Längengrad (Lon)').blur()
-  const zeile = page.getByRole('row', { name: /Ecoreg/ })
+  await oeffne(page, 'Kopfdaten')
+  const zeile = page.getByRole('row', { name: /Ökoregion/ })
   await expect(zeile).toContainText('nicht ableitbar')
   // Das Kopfdatum übernimmt erst beim Verlassen des Felds, nicht bei
   // jedem Zeichen — wie ein Mensch es tut: tippen, dann wegklicken.
-  await page.getByLabel('Ecoreg').fill('664')
-  await page.getByLabel('Ecoreg').blur()
+  await page.getByLabel('Ökoregion').fill('664')
+  await page.getByLabel('Ökoregion').blur()
   await expect(zeile).toContainText('von Hand gesetzt')
 })
 
@@ -73,7 +89,8 @@ test('Belege stehen als Nebentext, nicht als Kopfdatum', async ({ page }) => {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Ecoreg/ })).toContainText('Central European mixed forests')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByRole('row', { name: /Ökoregion/ })).toContainText('Central European mixed forests')
 })
 
 test('Höhe null Meter gilt als Wert, nicht als Lücke', async ({ page }) => {
@@ -97,7 +114,8 @@ test('Höhe null Meter gilt als Wert, nicht als Lücke', async ({ page }) => {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Altitude/ })).not.toContainText('nicht ableitbar')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByRole('row', { name: /Höhe/ })).not.toContainText('nicht ableitbar')
 })
 
 test('der GPS-Knopf füllt beide Felder auf sechs Nachkommastellen und nennt die Genauigkeit', async ({ page, context }) => {
@@ -171,13 +189,15 @@ test('ein geleertes Zahlen-Kopffeld gilt als fehlend, nicht als von Hand gesetzt
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  const zeile = page.getByRole('row', { name: /Ecoreg/ })
+  await oeffne(page, 'Kopfdaten')
+  const zeile = page.getByRole('row', { name: /Ökoregion/ })
   await expect(zeile).toContainText('aus ortus')
-  await page.getByLabel('Ecoreg').fill('')
-  await page.getByLabel('Ecoreg').blur()
+  await page.getByLabel('Ökoregion').fill('')
+  await page.getByLabel('Ökoregion').blur()
   await expect(zeile).toContainText('nicht ableitbar')
   await expect(zeile).not.toContainText('von Hand gesetzt')
-  await expect(page.getByLabel('Ecoreg')).toHaveValue('')
+  await oeffne(page, 'Kopfdaten')
+  await expect(page.getByLabel('Ökoregion')).toHaveValue('')
   await expect(page.getByRole('button', { name: 'Auswerten' })).toBeDisabled()
 })
 
@@ -186,10 +206,11 @@ test('der Beleg verschwindet, sobald das Feld von Hand gesetzt ist', async ({ pa
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  const zeile = page.getByRole('row', { name: /Ecoreg/ })
+  await oeffne(page, 'Kopfdaten')
+  const zeile = page.getByRole('row', { name: /Ökoregion/ })
   await expect(zeile).toContainText('Central European mixed forests')
-  await page.getByLabel('Ecoreg').fill('664')
-  await page.getByLabel('Ecoreg').blur()
+  await page.getByLabel('Ökoregion').fill('664')
+  await page.getByLabel('Ökoregion').blur()
   await expect(zeile).toContainText('von Hand gesetzt')
   // Der Beleg gehört zum Wert des Dienstes; neben einem selbst gesetzten
   // Wert würde er vortäuschen, dieser käme von dort.
@@ -210,4 +231,41 @@ test('der Auswerten-Knopf nennt den Grund seiner Sperre', async ({ page }) => {
   await neuerPlot(page)
   await expect(page.getByRole('button', { name: 'Auswerten' })).toBeDisabled()
   await expect(page.getByText(/Kopfdaten fehlen/)).toBeVisible()
+})
+
+test('ein neuer Plot zeigt Standort und Kopfdaten offen', async ({ page }) => {
+  await neuerPlot(page)
+  const abschnitte = page.locator('details.abschnitt')
+  await expect(abschnitte).toHaveCount(2)
+  for (let i = 0; i < 2; i += 1) {
+    await expect(abschnitte.nth(i)).toHaveAttribute('open', '')
+  }
+})
+
+test('der Standort klappt beim Eintragen der Koordinate nicht zu', async ({ page }) => {
+  await neuerPlot(page)
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
+  // Sonst verschwände die eben ermittelte Genauigkeit im selben Augenblick,
+  // und eine Korrektur verlangte erst ein Aufklappen.
+  await expect(page.locator('details.abschnitt').first()).toHaveAttribute('open', '')
+})
+
+test('ein gespeicherter Plot öffnet mit zugeklapptem Standort', async ({ page }) => {
+  await neuerPlot(page)
+  await page.getByLabel('Breitengrad (Lat)').fill('52.52')
+  await page.getByLabel('Längengrad (Lon)').fill('13.405')
+  await page.getByLabel('Längengrad (Lon)').blur()
+  await expect(page.getByText('52.520000 / 13.405000')).toBeVisible()
+
+  // Neu laden: der Plot ist fertig, die Abschnitte treten zurück und
+  // geben der Artenliste den Platz.
+  const adresse = page.url()
+  await page.goto('about:blank')
+  await page.goto(adresse)
+  const standort = page.locator('details.abschnitt').first()
+  await expect(standort).not.toHaveAttribute('open', '')
+  // Zugeklappt muss die Kopfzeile sagen, was drinsteht.
+  await expect(standort).toContainText('52.520000 / 13.405000')
 })

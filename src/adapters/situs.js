@@ -95,8 +95,18 @@ function syntaxon(s) {
 
 function artenNachRolle(species) {
   return Object.fromEntries(
-    ROLLEN.map(([schluessel]) => [schluessel, (species?.[schluessel] ?? []).map(art)]),
+    ROLLEN.map(([schluessel]) => [schluessel, (species?.[schluessel] ?? []).filter(eigenstaendig).map(art)]),
   )
+}
+
+// situs leitet aus einem Sammeltaxon dessen Einzelarten ab und führt sie
+// mit provenance "derived_from_aggregate" in der Liste. Fachlich sagen sie
+// nichts über den Habitattyp aus, was das Aggregat nicht schon sagt, und
+// sie machen die Liste unübersichtlich: bei R22 sind 76 von 161 Einträgen
+// solche Ableitungen, bei R1A 38 von 116. Angezeigt werden deshalb nur
+// Arten, die situs unmittelbar führt.
+function eigenstaendig(a) {
+  return a.provenance !== 'derived_from_aggregate'
 }
 
 function art(a) {

@@ -88,7 +88,7 @@ test('evaluate ohne vollständige Kopfdaten ruft den Dienst gar nicht', async ()
   actions.newPlot()
   await actions.evaluate()
   assert.equal(gerufen, false)
-  assert.match(store.get().error.message, /Country/)
+  assert.match(store.get().error.message, /Land/)
 })
 
 test('ein 400 von habitatus landet wörtlich im Store und als Fehlerstatus am Plot', async () => {

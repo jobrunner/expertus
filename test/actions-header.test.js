@@ -18,7 +18,7 @@ test('ein von Hand gesetztes Feld wechselt die Herkunft auf manual', async () =>
 test('blockingReason benennt das fehlende Feld', () => {
   const { actions } = setup()
   actions.newPlot()
-  assert.match(actions.blockingReason(), /Country/)
+  assert.match(actions.blockingReason(), /Land/)
 })
 
 test('ein geleertes Kopfdatenfeld gilt als fehlend, nicht als von Hand gesetzte Null', async () => {
@@ -29,7 +29,7 @@ test('ein geleertes Kopfdatenfeld gilt als fehlend, nicht als von Hand gesetzte 
   actions.setHeaderField('Ecoreg', null)
   assert.equal(store.get().plot.header.Ecoreg, null)
   assert.equal(store.get().plot.headerOrigin.Ecoreg, 'missing')
-  assert.match(actions.blockingReason(), /Ecoreg/)
+  assert.match(actions.blockingReason(), /Ökoregion/)
 })
 
 test('die TDWG-Region kommt mit den Kopfdaten in den Plot', async () => {

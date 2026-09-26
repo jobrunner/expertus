@@ -27,6 +27,16 @@
         "verbatim_name": "Angelica sylvestris",
         "role": "constant",
         "constancy": 19
+      },
+      {
+        "concept_id": "wcvp:concept:3109735",
+        "verbatim_name": "Achillea apiculata",
+        "role": "constant",
+        "constancy": 11,
+        "provenance": "derived_from_aggregate",
+        "derived_from": {
+          "concept_id": "wcvp:concept:2758888"
+        }
       }
     ],
     "diagnostic": [

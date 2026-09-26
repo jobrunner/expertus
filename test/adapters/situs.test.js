@@ -83,3 +83,14 @@ test('5xx ist ein Dienstfehler', async () => {
   const s = createSitus({ baseUrl: BASE, fetch: createFakeFetch({ status: 502, text: 'kaputt' }) })
   await assert.rejects(() => s.habitatType('R55'), (err) => err.service === 'situs')
 })
+
+test('aus einem Aggregat abgeleitete Arten erscheinen nicht', async () => {
+  const s = createSitus({ baseUrl: BASE, fetch: createFakeFetch({ json: R55 }) })
+  const h = await s.habitatType('R55')
+  // situs leitet aus einem Sammeltaxon dessen Einzelarten ab. Sie sagen
+  // nichts, was das Aggregat nicht schon sagt, und füllen die Liste: bei
+  // R22 sind 76 von 161 Einträgen solche Ableitungen.
+  const namen = h.arten.constant.map((a) => a.name)
+  assert.ok(!namen.includes('Achillea apiculata'))
+  assert.ok(namen.includes('Aegopodium podagraria'))
+})

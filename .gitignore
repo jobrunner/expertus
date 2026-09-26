@@ -3,3 +3,7 @@ node_modules/
 test-results/
 .playwright-mcp/
 /expertus
+
+# Artefakt aus Probeläufen, bei denen SHOT_DIR nicht gesetzt war:
+# Playwright schreibt dann nach "undefined/".
+undefined/

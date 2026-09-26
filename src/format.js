@@ -35,7 +35,17 @@ function percent(n) {
   return `${String(n).replace('.', ',')} %`
 }
 
+// Neben einer Auswahl, die die Klasse bereits zeigt, ist die Klasse im Text
+// eine Dopplung: "[2b ▾] 2b (5,5 %)". Angezeigt wird deshalb nur, was die
+// Auswahl nicht sagt — der Prozentwert, den die Klasse bedeutet.
 export function formatCover({ cover, coverClass }) {
+  if (cover === null || cover === undefined) return 'ohne Deckung'
+  return percent(cover)
+}
+
+// Der vollständige Ausdruck mit Klasse und Prozent — für Stellen ohne
+// Auswahl daneben, etwa den abgesetzten Request im Auswertungsanhang.
+export function formatCoverFull({ cover, coverClass }) {
   if (cover === null || cover === undefined) return 'ohne Deckung'
   return coverClass ? `${coverClass} (${percent(cover)})` : percent(cover)
 }

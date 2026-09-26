@@ -6,11 +6,13 @@ test('die Abschnitte der Maske sind sichtbar getrennt', async ({ page }) => {
 
   // Jeder Abschnitt trägt eine eigene Fläche; ohne sie verschwimmen
   // Standort, Kopfdaten, Arten und Auswertung zu einer einzigen Kolonne.
-  const karten = page.locator('main section.card')
-  await expect(karten).toHaveCount(4)
+  //
+  // Standort und Kopfdaten sind zuklappbar und deshalb <details>, die
+  // übrigen <section> — die Fläche (.card) tragen beide.
+  await expect(page.locator('main .card')).toHaveCount(4)
 
   for (const name of ['Standort', 'Kopfdaten', 'Arten', 'Auswertung']) {
-    await expect(page.locator('section.card').filter({ hasText: name })).not.toHaveCount(0)
+    await expect(page.locator('main .card').filter({ hasText: name })).not.toHaveCount(0)
   }
 })
 

@@ -17,8 +17,14 @@ export function renderResultSection({ plot, actions, store }) {
   const hinweisId = 'auswerten-grund'
   const hinweis = grund ? el('p', { id: hinweisId, class: 'muted', text: grund }) : null
 
-  const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
-    el('h3', { id: 'h-ausw', text: 'Auswertung' }),
+  // Knopf und Ergebnis stehen in einer Leiste, die beim Rollen am unteren
+  // Rand stehen bleibt. Während der Erfassung wird oft ausgewertet — um zu
+  // sehen, ob schon etwas trifft —, und bei zwanzig Arten läge der Knopf
+  // sonst jedes Mal eine halbe Bildschirmhöhe entfernt.
+  //
+  // Die Leiste liegt im Abschnitt und nicht außerhalb: sie gehört zur
+  // Auswertung, und ihr Inhalt (Ergebnis, Sperrgrund) bezieht sich darauf.
+  const leiste = el('div', { class: 'auswerten-leiste' }, [
     el('button', {
       type: 'button',
       class: 'btn',
@@ -27,8 +33,16 @@ export function renderResultSection({ plot, actions, store }) {
       'aria-describedby': hinweis ? hinweisId : null,
       onClick: () => actions.evaluate(),
     }),
-    hinweis,
     ergebnis(ev, actions),
+  ].filter(Boolean))
+
+  const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
+    el('h3', { id: 'h-ausw', text: 'Auswertung' }),
+    leiste,
+    // Der Grund steht unter der Leiste, nicht darin: er wird länger als
+    // eine Zeile ("Kopfdaten fehlen: Land, Küste, …") und spränge die
+    // Leiste sonst auf. Am Knopf hängt er über aria-describedby.
+    hinweis,
     habitat(ev, store, actions),
     ev?.status === 'ok' || ev?.status === 'stale' ? anhang(ev) : null,
   ])
@@ -87,8 +101,11 @@ function angaben(d) {
     d.beschreibung ? el('p', { text: d.beschreibung }) : null,
     // Die Beschreibung ist zitiert, nicht selbst formuliert.
     d.quelle ? el('p', { class: 'muted', text: `Quelle: ${d.quelle}` }) : null,
-    syntaxaListe(d.syntaxa),
+    // Die Arten stehen vor den Syntaxa: sie sind das, womit man im Gelände
+    // vergleicht — die Pflanzengesellschaften ordnen den Typ ein, aber man
+    // prüft sie seltener.
     artenListe(d.arten),
+    syntaxaListe(d.syntaxa),
   ])
 }
 

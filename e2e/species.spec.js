@@ -105,7 +105,7 @@ test('die Deckung wird als Klasse gewählt und als Prozent gezeigt', async ({ pa
   await input.fill('Quercus species')
   await input.press('Enter')
   await page.getByLabel('Deckung von Quercus species').selectOption('3')
-  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('3 (37,5 %)')
+  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('37,5 %')
 })
 
 test('der Skalenwechsel lässt Prozent stehen und nimmt nur das Etikett weg', async ({ page }) => {
@@ -157,7 +157,7 @@ test('die Artensuche gibt hostus die Region des Fundorts mit', async ({ page }) 
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByLabel('Ecoreg')).toHaveValue('654')
+  await expect(page.getByLabel('Ökoregion')).toHaveValue('654')
 
   await page.getByLabel('Art suchen').fill('Festuca')
   await expect.poll(() => anfragen.length).toBeGreaterThan(0)

@@ -13,7 +13,7 @@ async function auswerten(page) {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
+  await expect(page.getByRole('row', { name: /Land/ })).toContainText('aus ortus')
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca ovina')
   await input.press('Enter')
