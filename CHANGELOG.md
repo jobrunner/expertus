@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/jobrunner/expertus/compare/v0.3.1...v0.4.0) (2026-09-26)
+
+
+### Features
+
+* **cover:** put the percentage where the entry is ([c01d231](https://github.com/jobrunner/expertus/commit/c01d2318a8c4ac357a99f4fe5f223b958d99cfdf))
+* **ui:** put species entry at the centre of the form ([74093d9](https://github.com/jobrunner/expertus/commit/74093d9fe2da0d38814c545cf2c30d8bcfc4eec4))
+
+
+### Bug Fixes
+
+* **field:** tie height to its coordinate, show German habitat names ([d8e20d6](https://github.com/jobrunner/expertus/commit/d8e20d6b2531a4f393f9273124db959c0c35dd13))
+* **habitat:** name the plant communities as the habitat type's ([9264ca0](https://github.com/jobrunner/expertus/commit/9264ca09ab7d19d9f4781402681f4f6eaa969bc0))
+
 ## [0.3.1](https://github.com/jobrunner/expertus/compare/v0.3.0...v0.3.1) (2026-09-25)
 
 
