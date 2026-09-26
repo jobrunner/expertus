@@ -2,8 +2,8 @@
 // des Design-Systems, siehe /assets/designsystem.js) und die erfasste
 // Liste mit Deckung je Skala.
 import { el, stapelbar, svgIcon } from '../dom.js'
-import { classesFor, SCALES } from '../cover.js'
-import { formatCover } from '../format.js'
+import { classesFor, naechsteStufe, SCALES, toPercent } from '../cover.js'
+import { formatPercent } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
 import { schliessen as schliessenSymbol } from '/assets/icons.js'
 
@@ -88,7 +88,7 @@ function tabelle(plot, actions) {
     el('thead', {}, el('tr', {}, ['Art', 'Deckung', ''].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, plot.species.map((s, i) => el('tr', {}, [
       el('td', {}, [el('span', { text: s.name }), herkunft(s)]),
-      el('td', {}, [deckung(plot, s, i, actions), el('span', { class: 'deckungswert', text: ` ${formatCover(s)}` })]),
+      el('td', {}, deckung(plot, s, i, actions)),
       el('td', {}, entfernenKnopf(s, i, actions)),
     ]))),
   ]))
@@ -130,21 +130,73 @@ function entfernenKnopf(s, i, actions) {
 // Artnamen und ist optisch verborgen, weil "Deckung" bereits in der
 // Spaltenüberschrift steht.
 function deckung(plot, s, i, actions) {
-  const id = `deckung-${i}`
-  const label = `Deckung von ${s.name}`
-  if (plot.scale === 'percent') {
-    return el('span', {}, [
-      el('label', { for: id, class: 'visually-hidden', text: label }),
-      el('input', {
-        id, type: 'text', inputmode: 'decimal', value: s.cover ?? '',
-        onChange: (e) => actions.setCover(i, { percent: Number(String(e.target.value).replace(',', '.')) }),
-      }),
-    ])
-  }
-  return el('span', {}, [
+  // Als ein Bündel weitergereicht statt als sechs Argumente: id und label
+  // gehören zusammen und werden hier einmal gebildet.
+  const feld = { plot, s, i, actions, id: `deckung-${i}`, label: `Deckung von ${s.name}` }
+  return plot.scale === 'percent' ? prozentfeld(feld) : klassenauswahl(feld)
+}
+
+// Die Klasse trägt ihren Prozentwert im Eintrag selbst: "2 (~15 %)". Zuvor
+// stand er als eigene Zeile unter der Auswahl und hing dort ohne Bezug —
+// und bei der Prozentskala doppelt neben dem Feld, das ihn schon zeigt.
+//
+// Die Tilde gehört dazu: Es ist der Mittelwert der Klasse, nicht der
+// gemessene Wert. Wer 15 % schätzt, wählt Klasse 2; die Klasse umfasst
+// aber 5 bis 25 %.
+function klassenauswahl({ plot, s, i, actions, id, label }) {
+  return el('span', { class: 'deckungsklasse-feld' }, [
     el('label', { for: id, class: 'visually-hidden', text: label }),
-    el('select', { id, onChange: (e) => actions.setCover(i, { classCode: e.target.value }) },
+    el('select', { id, class: 'deckungsklasse', onChange: (e) => actions.setCover(i, { classCode: e.target.value }) },
       [el('option', { value: '', text: '—' }),
-       ...classesFor(plot.scale).map((c) => el('option', { value: c, text: c, selected: c === s.coverClass }))]),
+       ...classesFor(plot.scale).map((c) => el('option', {
+         value: c,
+         text: `${c} (~${formatPercent(toPercent(plot.scale, c))})`,
+         selected: c === s.coverClass,
+       }))]),
+    klassenloserWert(s),
+  ])
+}
+
+// Ein Prozentwert ohne passende Klasse in der eingestellten Skala. Das
+// entsteht beim Skalenwechsel: 15 % ist in Braun-Blanquet klassisch die
+// Klasse 2, in der erweiterten Fassung liegt zwischen 2a (10 %) und
+// 2b (20 %) nichts. Der Wert bleibt erhalten und zählt für die Auswertung
+// — ohne diese Anzeige stünde die Auswahl auf "—" und er wäre unsichtbar.
+function klassenloserWert(s) {
+  if (s.cover == null || s.coverClass) return null
+  return el('span', { class: 'muted deckung-ohne-klasse', text: formatPercent(s.cover) })
+}
+
+// Ein Zahlenfeld mit zwei Knöpfen, die auf die nächste übliche Stufe
+// springen. Kein natives type="number": dessen Schrittweite ist fest, und
+// Deckungen werden unten fein und oben grob geschätzt — von 1 auf 2, aber
+// von 80 auf 90. Eigene Werte bleiben eingebbar; die Knöpfe sind eine
+// Abkürzung, keine Einschränkung.
+function prozentfeld({ plot, s, i, actions, id, label }) {
+  const feld = el('input', {
+    id, type: 'text', inputmode: 'decimal', class: 'deckungsprozent',
+    // Mit Komma angezeigt, wie überall sonst in der Oberfläche: die
+    // Eingabe nimmt beides entgegen, die Anzeige soll nicht zwischen
+    // "37,5 %" daneben und "37.5" im Feld schwanken.
+    value: s.cover == null ? '' : String(s.cover).replace('.', ','),
+    onChange: (e) => actions.setCover(i, { percent: Number(String(e.target.value).replace(',', '.')) }),
+  })
+  const stufe = (richtung) => () => actions.setCover(i, { percent: naechsteStufe(s.cover, richtung) })
+  return el('span', { class: 'deckungsspinner' }, [
+    el('label', { for: id, class: 'visually-hidden', text: label }),
+    // Die Knöpfe nennen die Art: in einer Liste aus zwanzig Zeilen wäre
+    // "weniger" allein nicht zu unterscheiden.
+    el('button', {
+      type: 'button', class: 'btn btn-secondary btn-icon', text: '\u2212',
+      'aria-label': `${label} verringern`, title: `${label} verringern`, onClick: stufe(-1),
+    }),
+    feld,
+    el('button', {
+      type: 'button', class: 'btn btn-secondary btn-icon', text: '+',
+      'aria-label': `${label} erhöhen`, title: `${label} erhöhen`, onClick: stufe(1),
+    }),
+    // Die Einheit gehört sichtbar dazu: im Feld steht nur die Zahl, und
+    // eine nackte "24,65" sagt nicht, worum es geht.
+    el('span', { class: 'muted deckung-einheit', text: '%' }),
   ])
 }

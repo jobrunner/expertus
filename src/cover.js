@@ -41,6 +41,31 @@ export function classFor(scale, percent) {
   return hit ? hit[0] : null
 }
 
+// Die Stufen, in denen Deckungen üblicherweise geschätzt werden: unten
+// fein, oben grob — niemand unterscheidet 87 von 88 Prozent, aber 1 von 2
+// sehr wohl. Sie sind die Schrittweite der Plus-/Minus-Knöpfe am
+// Prozentfeld, keine Einschränkung: eigene Werte bleiben eingebbar.
+//
+// Enthalten sind auch die Mittelwerte der Braun-Blanquet-Klassen, damit
+// ein Wechsel der Skala nicht in einer Stufe landet, die es hier nicht
+// gibt.
+export const PROZENTSTUFEN = [
+  0.1, 0.5, 1, 2, 2.5, 3, 4, 5, 7, 10, 15, 20, 25, 30, 37.5,
+  40, 50, 60, 62.5, 70, 75, 80, 87.5, 90, 95, 100,
+]
+
+// Die nächste Stufe über bzw. unter einem Wert. Ein Wert zwischen zwei
+// Stufen springt auf die nächstgelegene in der gewünschten Richtung, nicht
+// auf einen Rasterpunkt — wer 23 eingetragen hat, kommt mit Plus auf 25.
+export function naechsteStufe(wert, richtung) {
+  if (!Number.isFinite(wert)) return richtung > 0 ? PROZENTSTUFEN[0] : PROZENTSTUFEN.at(-1)
+  const kandidaten = richtung > 0
+    ? PROZENTSTUFEN.filter((s) => s > wert)
+    : PROZENTSTUFEN.filter((s) => s < wert)
+  if (!kandidaten.length) return wert
+  return richtung > 0 ? kandidaten[0] : kandidaten.at(-1)
+}
+
 export function isValidPercent(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 100
 }

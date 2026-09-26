@@ -2,12 +2,12 @@
 // und Auswertung. Kopfdaten werden nebenläufig geholt — pending blockiert
 // nur den Kopfdaten-Abschnitt, nie die Maske.
 import { el, clear, preserveFocus, svgIcon, stapelbar } from '../dom.js'
-import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS } from '../header-map.js'
+import { COAST_VALUES, DUNE_VALUES, HEADER_FIELDS, beschriftungFuer, missingFields } from '../header-map.js'
 import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
-import { originLabel } from '../format.js'
+import { formatCoord, originLabel } from '../format.js'
 import { CollisionError } from '../storage.js'
 import { hashFor } from '../router.js'
-import { standort as standortSymbol } from '/assets/icons.js'
+import { standort as standortSymbol, chevronUnten as chevronSymbol } from '/assets/icons.js'
 import { mountKoordinaten } from '/assets/designsystem.js'
 
 // Dieselben sieben Systeme wie bei Ortus, wortgleich aus dessen frontend.go
@@ -151,13 +151,13 @@ function buildKoordinatenEingabe(plot, actions) {
   // dieses System umgestellt werden, sonst stünden Gradwerte unter der
   // Beschriftung eines anderen Systems. Ortus macht das an derselben
   // Stelle genauso (sridSelect.value = '4326' in dessen frontend.go).
-  function applyExternalCoordinate({ lat, lon, source, accuracyM }) {
+  function applyExternalCoordinate({ lat, lon, source, accuracyM, altitudeM }) {
     auswahl.value = '4326'
     auswahl.dispatchEvent(new Event('change'))
     feldY.value = lat.toFixed(6)
     feldX.value = lon.toFixed(6)
     letzte = { system: '4326', x: feldX.value, y: feldY.value, text: '' }
-    actions.setCoordinate({ lat: Number(feldY.value), lon: Number(feldX.value), source, accuracyM })
+    actions.setCoordinate({ lat: Number(feldY.value), lon: Number(feldX.value), source, accuracyM, altitudeM })
     actions.fetchHeader()
   }
 
@@ -193,6 +193,9 @@ function buildGpsButton(applyExternalCoordinate) {
           applyExternalCoordinate({
             lat: pos.coords.latitude, lon: pos.coords.longitude,
             source: 'gps', accuracyM: Math.round(pos.coords.accuracy),
+            // Nicht jedes Gerät und nicht jede Ortung liefert eine Höhe;
+            // fehlt sie, bleibt es bei der aus dem Geländemodell.
+            altitudeM: pos.coords.altitude ?? null,
           })
         },
         (err) => {
@@ -222,19 +225,82 @@ function buildSampleIdField(plot, actions, router) {
   })
 }
 
-function standort(plot, actions, router) {
+// Standort und Kopfdaten werden einmal ausgefüllt und danach selten wieder
+// gebraucht — die Kopfdaten kommen ohnehin aus ortus. Offen halten sie die
+// Artenliste weit unten fest, die der eigentliche Arbeitsbereich ist.
+// Beide Abschnitte klappen deshalb zu, sobald sie erledigt sind, und tragen
+// dann eine Zusammenfassung in der Kopfzeile. Ein Tipp öffnet sie wieder.
+//
+// Kein eigenes Verhalten in JavaScript: <details> bringt Aufklappen,
+// Tastaturbedienung und Ansage mit. Solange der Abschnitt noch nicht
+// erledigt ist, steht `open` — man wird also nicht vor eine geschlossene
+// Klappe gesetzt.
+// `offen` merkt sich, was der Anwender selbst auf- oder zugeklappt hat.
+// Ohne dieses Gedächtnis schnappte der Abschnitt bei jedem Neuzeichnen in
+// seinen automatischen Zustand zurück — man setzt ein Kopfdatum von Hand,
+// die Kopfdaten sind damit vollständig, und die Klappe fällt zu, während
+// man noch hineinsieht. Dasselbe nach dem GPS-Knopf: Die eben ermittelte
+// Genauigkeit verschwände im selben Augenblick.
+function abschnitt({ id, titel, zusammenfassung, erledigt, inhalt, offen }) {
+  // Der Zustand wird einmal festgelegt und dann gehalten. Wer einen
+  // gespeicherten Plot öffnet, findet beides zugeklappt vor; wer gerade
+  // eine Koordinate einträgt, dem klappt der Abschnitt nicht unter den
+  // Fingern zu, sobald sie vollständig ist — die eben ermittelte
+  // Genauigkeit bliebe sonst keinen Augenblick stehen.
+  if (!offen.has(id)) offen.set(id, !erledigt)
+  const istOffen = offen.get(id)
+  const griff = el('summary', {}, [
+    // Das Vorgabedreieck von <details> entfällt, sobald summary als
+    // Flex-Behälter gesetzt ist. Ohne eigenes Zeichen sieht man der
+    // Kopfzeile nicht an, dass sie sich aufklappen lässt.
+    svgIcon(chevronSymbol),
+    // Die Überschrift bleibt eine Überschrift, auch im summary: sonst
+    // verschwindet der Abschnitt aus der Überschriftenliste, über die sich
+    // Bildschirmleser durch eine Seite bewegen. <summary> erlaubt
+    // Fließinhalt, die Klappfunktion bleibt davon unberührt.
+    el('h3', { class: 'abschnitt-titel', id, text: titel }),
+    zusammenfassung ? el('span', { class: 'muted abschnitt-zusammenfassung', text: zusammenfassung }) : null,
+  ])
+  const knoten = el('details', { class: 'card abschnitt', open: istOffen ? '' : null }, [
+    griff,
+    el('div', { class: 'abschnitt-inhalt' }, inhalt.filter(Boolean)),
+  ])
+  // Am Klick, nicht am toggle-Ereignis: toggle feuert auch, wenn der
+  // Abschnitt beim Neuaufbau mit gesetztem open entsteht. Gemerkt würde
+  // dann sofort "offen", und die Automatik käme nie zum Zug. Ein Klick auf
+  // den Griff ist dagegen eindeutig eine Handlung des Anwenders — auch per
+  // Tastatur, denn Enter und Leertaste lösen ihn aus.
+  griff.addEventListener('click', () => {
+    // Der Zustand kippt erst nach diesem Ereignis.
+    queueMicrotask(() => offen.set(id, knoten.open))
+  })
+  return knoten
+}
+
+function standort(plot, actions, router, offen) {
   const koordinaten = buildKoordinatenEingabe(plot, actions)
   const gps = buildGpsButton(koordinaten.applyExternalCoordinate)
   const sample = buildSampleIdField(plot, actions, router)
-  return el('section', { class: 'card', 'aria-labelledby': 'h-standort' }, [
-    el('h3', { id: 'h-standort', text: 'Standort' }),
-    feld('Sample-ID', sample),
-    koordinaten.container,
-    gps,
-    // Im Gelände entscheidet der Unterschied zwischen 8 m und 800 m —
-    // der Browser verschweigt ihn sonst, deshalb wird er hier angezeigt.
-    plot.accuracyM != null ? el('p', { class: 'muted', text: `± ${plot.accuracyM} m` }) : null,
-  ])
+  const k = plot.coordinate
+  return abschnitt({
+    offen,
+    id: 'h-standort',
+    titel: 'Standort',
+    zusammenfassung: k ? `${formatCoord(k.lat)} / ${formatCoord(k.lon)}` : null,
+    erledigt: Boolean(k),
+    inhalt: [
+      feld('Sample-ID', sample),
+      koordinaten.container,
+      gps,
+      // Im Gelände entscheidet der Unterschied zwischen 8 m und 800 m —
+      // der Browser verschweigt ihn sonst, deshalb wird er hier angezeigt.
+      // Ausgeschrieben, weil "± 12 m" allein offenlässt, worauf sich die
+      // Angabe bezieht: auf die waagerechte Lage, nicht auf die Höhe.
+      plot.accuracyM != null
+        ? el('p', { class: 'muted', text: `Standortgenauigkeit ± ${plot.accuracyM} m (waagerecht)` })
+        : null,
+    ],
+  })
 }
 
 // Belege — die Quelle hinter einem Wert, etwa der Name der Ökoregion oder
@@ -280,7 +346,7 @@ function zeile(plot, field, actions) {
         } })
 
   return el('tr', {}, [
-    el('th', { scope: 'row' }, el('label', { for: control.id, text: field })),
+    el('th', { scope: 'row' }, el('label', { for: control.id, text: beschriftungFuer(field) })),
     el('td', {}, [control, beleg(plot, field)]),
     el('td', {
       class: origin === 'missing' && abgefragt ? 'warn' : 'muted',
@@ -289,17 +355,33 @@ function zeile(plot, field, actions) {
   ])
 }
 
-function kopfdaten(plot, pending, actions) {
-  return el('section', { class: 'card', 'aria-labelledby': 'h-kopf' }, [
-    el('h3', { id: 'h-kopf', text: 'Kopfdaten' }),
-    pending ? el('p', { class: 'muted', text: 'Kopfdaten werden geholt …' }) : null,
-    // Eine breite Tabelle rollt in ihrem eigenen Kasten; die Seite selbst
-    // darf nicht waagerecht rollen (WCAG 1.4.10).
-    el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
-      el('thead', {}, el('tr', {}, ['Feld', 'Wert', 'Herkunft'].map((t) => el('th', { scope: 'col', text: t })))),
-      el('tbody', {}, HEADER_FIELDS.map((f) => zeile(plot, f, actions))),
-    ]))),
-  ])
+function kopfdaten(plot, pending, actions, offen) {
+  const fehlend = missingFields(plot.headerOrigin ?? {})
+  return abschnitt({
+    offen,
+    id: 'h-kopf',
+    titel: 'Kopfdaten',
+    // Der Zustand gehört in die Kopfzeile: zugeklappt ist sonst nicht zu
+    // sehen, ob etwas fehlt — und genau daran hängt der Auswerten-Knopf.
+    zusammenfassung: kopfdatenStand(plot, pending, fehlend),
+    erledigt: !pending && fehlend.length === 0,
+    inhalt: [
+      pending ? el('p', { class: 'muted', text: 'Kopfdaten werden geholt …' }) : null,
+      // Eine breite Tabelle rollt in ihrem eigenen Kasten; die Seite selbst
+      // darf nicht waagerecht rollen (WCAG 1.4.10).
+      el('div', { class: 'table-wrap' }, stapelbar(el('table', {}, [
+        el('thead', {}, el('tr', {}, ['Feld', 'Wert', 'Herkunft'].map((t) => el('th', { scope: 'col', text: t })))),
+        el('tbody', {}, HEADER_FIELDS.map((f) => zeile(plot, f, actions))),
+      ]))),
+    ],
+  })
+}
+
+function kopfdatenStand(plot, pending, fehlend) {
+  if (pending) return 'werden geholt …'
+  if (!plot.coordinate) return 'warten auf Koordinate'
+  if (fehlend.length) return `${fehlend.length} fehlen`
+  return 'vollständig'
 }
 
 // Baut den gesamten Mask-Inhalt neu auf. Eigenständige Funktion (statt in
@@ -307,7 +389,7 @@ function kopfdaten(plot, pending, actions) {
 // Komplexität trägt statt in der von renderPlotForm aufzugehen — cleanup
 // und abschnitte bleiben dagegen dort verschachtelt, weil sie das
 // veränderliche sectionCleanups direkt anfassen.
-function draw({ mount, store, actions, router, cleanupSections, abschnitte }) {
+function draw({ mount, store, actions, router, cleanupSections, abschnitte, offen }) {
   // Ein Neuaufbau ersetzt den gesamten Einhängepunkt und würde sonst den
   // Fokus verwerfen: nach jedem Zeichen in einem Zahlenfeld läge er im
   // Nichts, und die Maske wäre über Tastatur unbenutzbar. preserveFocus
@@ -334,8 +416,8 @@ function draw({ mount, store, actions, router, cleanupSections, abschnitte }) {
         // in der Maske; role="alert" sorgt zugleich für die Ansage, ohne
         // dass der globale Bereich denselben Text noch einmal spiegelt.
         error ? fehlerzeile(error) : null,
-        standort(plot, actions, router),
-        kopfdaten(plot, headerPending, actions),
+        standort(plot, actions, router, offen),
+        kopfdaten(plot, headerPending, actions, offen),
         ...abschnitte(plot),
       ].filter(Boolean),
     )
@@ -348,6 +430,12 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
   // Neuaufbau erzeugt sie neu; ohne diese Sammlung liefe der alte Timer
   // weiter und feuerte eine Netzanfrage in einen längst ersetzten Baum.
   let sectionCleanups = []
+
+  // Was der Anwender an den Abschnitten auf- oder zugeklappt hat. Lebt hier
+  // und nicht im Store: es ist Bedienzustand einer Ansicht, kein Teil des
+  // Plots — beim Wechsel zu einem anderen Plot wird die Maske ohnehin neu
+  // aufgebaut und die Vorgabe greift wieder.
+  const offen = new Map()
 
   function cleanupSections() {
     for (const fn of sectionCleanups) fn()
@@ -362,7 +450,7 @@ export function renderPlotForm({ mount, store, actions, router, sections = [] })
     return gezeichnet.map((a) => a.node)
   }
 
-  const redraw = () => draw({ mount, store, actions, router, cleanupSections, abschnitte })
+  const redraw = () => draw({ mount, store, actions, router, cleanupSections, abschnitte, offen })
 
   // Ohne Abmeldung zeichnet eine längst verlassene Ansicht bei jeder
   // Zustandsänderung weiter in den gemeinsamen Einhängepunkt.

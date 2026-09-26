@@ -17,8 +17,14 @@ export function renderResultSection({ plot, actions, store }) {
   const hinweisId = 'auswerten-grund'
   const hinweis = grund ? el('p', { id: hinweisId, class: 'muted', text: grund }) : null
 
-  const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
-    el('h3', { id: 'h-ausw', text: 'Auswertung' }),
+  // Knopf und Ergebnis stehen in einer Leiste, die beim Rollen am unteren
+  // Rand stehen bleibt. Während der Erfassung wird oft ausgewertet — um zu
+  // sehen, ob schon etwas trifft —, und bei zwanzig Arten läge der Knopf
+  // sonst jedes Mal eine halbe Bildschirmhöhe entfernt.
+  //
+  // Die Leiste liegt im Abschnitt und nicht außerhalb: sie gehört zur
+  // Auswertung, und ihr Inhalt (Ergebnis, Sperrgrund) bezieht sich darauf.
+  const leiste = el('div', { class: 'auswerten-leiste' }, [
     el('button', {
       type: 'button',
       class: 'btn',
@@ -27,8 +33,16 @@ export function renderResultSection({ plot, actions, store }) {
       'aria-describedby': hinweis ? hinweisId : null,
       onClick: () => actions.evaluate(),
     }),
-    hinweis,
     ergebnis(ev, actions),
+  ].filter(Boolean))
+
+  const node = el('section', { class: 'card', 'aria-labelledby': 'h-ausw' }, [
+    el('h3', { id: 'h-ausw', text: 'Auswertung' }),
+    leiste,
+    // Der Grund steht unter der Leiste, nicht darin: er wird länger als
+    // eine Zeile ("Kopfdaten fehlen: Land, Küste, …") und spränge die
+    // Leiste sonst auf. Am Knopf hängt er über aria-describedby.
+    hinweis,
     habitat(ev, store, actions),
     ev?.status === 'ok' || ev?.status === 'stale' ? anhang(ev) : null,
   ])
@@ -83,19 +97,43 @@ function warten(h, code, actions) {
 
 function angaben(d) {
   return el('div', { class: 'habitat' }, [
-    d.name ? el('h4', { text: d.name }) : null,
-    d.beschreibung ? el('p', { text: d.beschreibung }) : null,
+    // Der deutsche Name steht oben: im Gelände ist er schneller zu
+    // erfassen. Der englische bleibt darunter, weil er der amtliche
+    // EUNIS-Wortlaut ist, an dem sich Literatur und Schlüssel orientieren.
+    el('h4', {}, [
+      el('span', { text: d.nameDe ?? d.name ?? '' }),
+      // Der volkstümliche Name, den situs nicht zu jedem Typ führt.
+      d.nameVolkstuemlich ? el('span', { class: 'muted habitat-volkstuemlich', text: ` (${d.nameVolkstuemlich})` }) : null,
+    ]),
+    d.nameDe && d.name ? el('p', { class: 'muted habitat-name-en', text: d.name }) : null,
+    d.beschreibungDe ? el('p', { text: d.beschreibungDe }) : null,
+    // Der englische Wortlaut klappt auf, statt die Karte zu verdoppeln:
+    // zwei lange Absätze übereinander liest im Gelände niemand.
+    d.beschreibung && d.beschreibungDe
+      ? el('details', { class: 'akkordeon' }, [
+        el('summary', { text: 'Beschreibung im englischen Original' }),
+        el('div', { class: 'akkordeon-inhalt' }, el('p', { text: d.beschreibung })),
+      ])
+      : (d.beschreibung ? el('p', { text: d.beschreibung }) : null),
     // Die Beschreibung ist zitiert, nicht selbst formuliert.
     d.quelle ? el('p', { class: 'muted', text: `Quelle: ${d.quelle}` }) : null,
-    syntaxaListe(d.syntaxa),
+    // Die Arten stehen vor den Syntaxa: sie sind das, womit man im Gelände
+    // vergleicht — die Pflanzengesellschaften ordnen den Typ ein, aber man
+    // prüft sie seltener.
     artenListe(d.arten),
+    syntaxaListe(d.syntaxa),
   ])
 }
 
 function syntaxaListe(syntaxa) {
   if (!syntaxa?.length) return null
   return el('details', { class: 'akkordeon' }, [
-    el('summary', { text: `Pflanzengesellschaften (${syntaxa.length})` }),
+    // "des Habitattyps" ausgeschrieben, mit demselben Wort wie die
+    // Artenliste darüber: die Liste steht unter dem Ergebnis der
+    // Auswertung, und ohne den Zusatz liest sie sich wie die
+    // Gesellschaften der erfassten Aufnahme statt wie die des bestimmten
+    // Typs.
+    el('summary', { text: `Pflanzengesellschaften des Habitattyps (${syntaxa.length})` }),
     el('div', { class: 'akkordeon-inhalt' },
       el('ul', {}, syntaxa.map((s) => el('li', {}, [
         el('span', { text: s.name }),

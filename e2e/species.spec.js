@@ -105,7 +105,7 @@ test('die Deckung wird als Klasse gewählt und als Prozent gezeigt', async ({ pa
   await input.fill('Quercus species')
   await input.press('Enter')
   await page.getByLabel('Deckung von Quercus species').selectOption('3')
-  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('3 (37,5 %)')
+  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('37,5 %')
 })
 
 test('der Skalenwechsel lässt Prozent stehen und nimmt nur das Etikett weg', async ({ page }) => {
@@ -123,9 +123,58 @@ test('in der Prozentskala ist die Deckung direkt eingebbar', async ({ page }) =>
   const input = page.getByLabel('Art suchen')
   await input.fill('Quercus species')
   await input.press('Enter')
-  await page.getByLabel('Deckung von Quercus species').fill('24,65')
-  await page.getByLabel('Deckung von Quercus species').blur()
-  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('24,65 %')
+  // Nicht getByLabel: die Plus-/Minus-Knöpfe tragen den Artnamen als
+  // Präfix ihres Namens und würden mittreffen.
+  const feld = page.getByRole('textbox', { name: 'Deckung von Quercus species' })
+  await feld.fill('24,65')
+  await feld.blur()
+  await expect(feld).toHaveValue('24,65')
+  // Die Einheit steht daneben, nicht im Feld.
+  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('%')
+})
+
+test('die Knöpfe springen auf übliche Schätzstufen', async ({ page }) => {
+  await page.getByLabel('Deckungsskala').selectOption('percent')
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Quercus species')
+  await input.press('Enter')
+  const feld = page.getByRole('textbox', { name: 'Deckung von Quercus species' })
+  await feld.fill('10')
+  await feld.blur()
+
+  // Unten fein, oben grob: niemand unterscheidet 87 von 88 Prozent.
+  await page.getByRole('button', { name: /erhöhen/ }).click()
+  await expect(feld).toHaveValue('15')
+  await page.getByRole('button', { name: /erhöhen/ }).click()
+  await expect(feld).toHaveValue('20')
+  await page.getByRole('button', { name: /verringern/ }).click()
+  await expect(feld).toHaveValue('15')
+})
+
+test('ein eigener Wert bleibt eingebbar und wird nicht gerastert', async ({ page }) => {
+  await page.getByLabel('Deckungsskala').selectOption('percent')
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Quercus species')
+  await input.press('Enter')
+  const feld = page.getByRole('textbox', { name: 'Deckung von Quercus species' })
+  await feld.fill('23')
+  await feld.blur()
+  // Die Stufen sind eine Abkürzung, keine Einschränkung.
+  await expect(feld).toHaveValue('23')
+  await page.getByRole('button', { name: /erhöhen/ }).click()
+  await expect(feld).toHaveValue('25')
+})
+
+test('ein Prozentwert ohne passende Klasse bleibt sichtbar', async ({ page }) => {
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Quercus species')
+  await input.press('Enter')
+  await page.getByRole('combobox', { name: 'Deckung von Quercus species' }).selectOption('2')
+  // 15 % ist in der klassischen Skala die Klasse 2; in der erweiterten
+  // liegt zwischen 2a (10 %) und 2b (20 %) nichts. Der Wert zählt
+  // trotzdem für die Auswertung und darf nicht unsichtbar werden.
+  await page.getByLabel('Deckungsskala').selectOption('bb-extended')
+  await expect(page.getByRole('row', { name: /Quercus species/ })).toContainText('15 %')
 })
 
 test('eine Art lässt sich wieder entfernen', async ({ page }) => {
@@ -157,7 +206,7 @@ test('die Artensuche gibt hostus die Region des Fundorts mit', async ({ page }) 
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByLabel('Ecoreg')).toHaveValue('654')
+  await expect(page.getByLabel('Ökoregion')).toHaveValue('654')
 
   await page.getByLabel('Art suchen').fill('Festuca')
   await expect.poll(() => anfragen.length).toBeGreaterThan(0)

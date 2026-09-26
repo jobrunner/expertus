@@ -87,6 +87,11 @@ var verwendeteIcons = map[string]icons.Icon{
 	// Knopf sonst auf einem Telefon eine ganze Zeile je Art belegt; der
 	// zugängliche Name steht am Knopf und nennt die Art.
 	"schliessen": icons.MitKlasse(icons.Schliessen(), "icon"),
+	// Zeigt an den zuklappbaren Abschnitten der Maske, dass sich etwas
+	// aufklappen lässt. Das Vorgabedreieck von <details> verschwindet,
+	// sobald summary als Flex-Behälter gesetzt wird — ohne eigenes Zeichen
+	// sieht man der Kopfzeile nicht an, dass sie eine Klappe ist.
+	"chevronUnten": icons.MitKlasse(icons.ChevronUnten(), "icon"),
 }
 
 // iconsJSHandler liefert die gebrauchten Symbole als ES-Modul mit

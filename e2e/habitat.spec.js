@@ -13,7 +13,7 @@ async function auswerten(page) {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
+  await expect(page.getByRole('row', { name: /Land/ })).toContainText('aus ortus')
   const input = page.getByLabel('Art suchen')
   await input.fill('Festuca ovina')
   await input.press('Enter')
@@ -27,15 +27,52 @@ test.beforeEach(async ({ page }) => {
 
 test('nach der Auswertung stehen Name und Beschreibung des Habitattyps da', async ({ page }) => {
   await auswerten(page)
-  await expect(page.getByRole('heading', { name: 'Semi-dry perennial calcareous grassland (meadow steppe)' })).toBeVisible()
+  // Oben der deutsche Name mit dem volkstümlichen daneben — im Gelände
+  // schneller zu erfassen als der amtliche englische Wortlaut.
+  await expect(page.getByRole('heading', { name: /Submediterran-subkontinentaler Halbtrockenrasen/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Kalk-Halbtrockenrasen/ })).toBeVisible()
+  // Der englische Name bleibt darunter: er ist der Wortlaut, an dem sich
+  // Literatur und Schlüssel orientieren.
+  await expect(page.getByText('Semi-dry perennial calcareous grassland (meadow steppe)')).toBeVisible()
   await expect(page.getByText('Artenreiche Halbtrockenrasen basenreicher Böden.')).toBeVisible()
   // Die Beschreibung ist zitiert, nicht selbst formuliert.
   await expect(page.getByText(/floraveg:eunis-habitat-factsheets/)).toBeVisible()
 })
 
+test('der englische Beschreibungstext steht aufklappbar daneben', async ({ page }) => {
+  await auswerten(page)
+  const original = page.locator('details', { hasText: 'Beschreibung im englischen Original' })
+  await expect(original).toBeVisible()
+  // Zugeklappt: zwei lange Absätze übereinander liest im Gelände niemand.
+  await expect(page.getByText('Species-rich semi-dry grassland on base-rich soils.')).toBeHidden()
+  await original.getByText('Beschreibung im englischen Original').click()
+  await expect(page.getByText('Species-rich semi-dry grassland on base-rich soils.')).toBeVisible()
+})
+
+test('ohne deutsche Übersetzung trägt der englische Wortlaut die Anzeige', async ({ page }) => {
+  await stubServices(page, {
+    situs: {
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        typology: 'eunis@2021', code: 'R1A', level: 3,
+        name_en: 'Semi-dry perennial calcareous grassland (meadow steppe)',
+        description: { value: 'Species-rich semi-dry grassland on base-rich soils.', source: 'floraveg:…' },
+        species: { diagnostic: [], constant: [], dominant: [] },
+        syntaxa: [], crosswalks: [],
+      }),
+    },
+  })
+  await auswerten(page)
+  await expect(page.getByRole('heading', { name: /Semi-dry perennial calcareous grassland/ })).toBeVisible()
+  await expect(page.getByText('Species-rich semi-dry grassland on base-rich soils.')).toBeVisible()
+  // Kein leerer Klappkasten, wenn es nichts zu vergleichen gibt.
+  await expect(page.locator('details', { hasText: 'Beschreibung im englischen Original' })).toHaveCount(0)
+})
+
 test('die Pflanzengesellschaften stehen in einem Akkordeon', async ({ page }) => {
   await auswerten(page)
-  const akkordeon = page.locator('details', { hasText: 'Pflanzengesellschaften' })
+  const akkordeon = page.locator('details', { hasText: 'Pflanzengesellschaften des Habitattyps' })
   await expect(akkordeon).toBeVisible()
   // Zugeklappt, bis der Inhalt gebraucht wird.
   await expect(akkordeon).not.toHaveAttribute('open', '')
@@ -108,7 +145,7 @@ test('ein wieder geöffneter Plot holt die Angaben erneut', async ({ page }) => 
   // Nachschlagedaten und stehen nur im Zustand. Genau deshalb hängt der
   // Abruf nicht allein an evaluate().
   await auswerten(page)
-  await expect(page.getByRole('heading', { name: /Semi-dry perennial/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Submediterran-subkontinentaler/ })).toBeVisible()
   const adresse = page.url()
 
   // Neu laden, nicht nur zur Liste und zurück: die Angaben stehen im
@@ -116,5 +153,5 @@ test('ein wieder geöffneter Plot holt die Angaben erneut', async ({ page }) => 
   // zeigt, ob sie beim Öffnen wieder geholt werden.
   await page.goto('about:blank')
   await page.goto(adresse)
-  await expect(page.getByRole('heading', { name: /Semi-dry perennial/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Submediterran-subkontinentaler/ })).toBeVisible()
 })

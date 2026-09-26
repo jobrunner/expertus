@@ -116,11 +116,6 @@ nav[aria-label='Hauptnavigation'] {
     content: none;
   }
 
-  /* Der ausgeschriebene Deckungswert steht schon in der Auswahl daneben. */
-  .arten-liste .deckungswert {
-    display: none;
-  }
-
   /* Ein Plot ist zwei Zeilen: Kennung und Ergebnis nebeneinander, das
      Datum darunter. */
   .plot-liste tbody tr {
@@ -152,4 +147,125 @@ nav[aria-label='Hauptnavigation'] {
 .herkunft {
   margin-left: 0.125rem;
   cursor: help;
+}
+
+/* --- Zuklappbare Abschnitte der Maske --- */
+
+/* Standort und Kopfdaten sind einmal auszufüllen und danach selten wieder
+   nötig. Als <details> treten sie zurück, ohne zu verschwinden. Die
+   Überschrift bleibt ein <h3>, damit der Abschnitt in der
+   Überschriftenliste eines Bildschirmlesers steht — optisch soll sie
+   trotzdem in der Klappzeile liegen, nicht darüber. */
+.abschnitt > summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  cursor: pointer;
+  /* Der Griff muss auch mit Handschuhen zu treffen sein (WCAG 2.5.8). */
+  min-height: 2.75rem;
+  /* list-style und ::-webkit-details-marker: beides entfernt das
+     browsereigene Dreieck, das sonst neben dem Chevron stünde. */
+  list-style: none;
+}
+
+.abschnitt > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Das Chevron zeigt nach unten, solange zu ist, und dreht sich beim
+   Öffnen. Die Drehung folgt prefers-reduced-motion über die allgemeine
+   Regel des Design-Systems. */
+.abschnitt > summary > .icon {
+  flex: 0 0 auto;
+  transition: transform 0.15s;
+}
+
+.abschnitt[open] > summary > .icon {
+  transform: rotate(180deg);
+}
+
+.abschnitt-titel {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.abschnitt-zusammenfassung {
+  font-size: 0.875rem;
+}
+
+.abschnitt-inhalt {
+  padding-top: 0.75rem;
+}
+
+/* --- Auswerten-Leiste --- */
+
+/* Während der Erfassung wird oft ausgewertet, um zu sehen, ob schon etwas
+   trifft. Bei zwanzig Arten läge der Knopf sonst jedes Mal eine halbe
+   Bildschirmhöhe entfernt, also bleibt die Leiste beim Rollen stehen.
+
+   position: sticky statt fixed: die Leiste bleibt Teil des Textflusses und
+   verdeckt nichts, wenn die Seite kürzer ist als der Bildschirm. */
+.auswerten-leiste {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  /* Ohne eigene Fläche scheint der Text darunter durch. */
+  background: var(--card);
+}
+
+/* Der Knopf schrumpft nicht, der Ergebnistext darf umbrechen. */
+.auswerten-leiste > .btn {
+  flex: 0 0 auto;
+}
+
+.auswerten-leiste > p {
+  margin: 0;
+}
+
+/* --- Deckungseingabe --- */
+
+/* Minus, Zahlenfeld, Plus in einer Reihe. Die Knöpfe springen auf die
+   nächste übliche Schätzstufe; das Feld bleibt frei beschreibbar. */
+.deckungsspinner,
+.deckungsklasse-feld {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deckung-einheit,
+.deckung-ohne-klasse {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.deckungsspinner .deckungsprozent {
+  /* Breit genug für "37,5", schmal genug, damit Knöpfe und Feld in eine
+     Zeile der Artenliste passen. */
+  width: 4.5rem;
+  text-align: right;
+}
+
+/* Die Klassenauswahl trägt jetzt den Prozentwert im Eintrag ("2 (~15 %)")
+   und braucht dafür mehr Platz als für den bloßen Code. */
+.deckungsklasse {
+  min-width: 8rem;
+}
+
+@media (max-width: 40rem) {
+  /* In der dichten Artenzeile hat die Deckung nur so viel Platz, wie Name
+     und Entfernen-Knopf übrig lassen. */
+  .deckungsklasse {
+    min-width: 0;
+  }
+
+  .deckungsspinner .deckungsprozent {
+    width: 3.5rem;
+  }
 }

@@ -12,6 +12,13 @@ import { ServiceError, readError, rethrowAbort } from './errors.js'
 
 const TYPOLOGIE = 'eunis@2021'
 
+// situs liefert Name und Beschreibung zusätzlich auf Deutsch, wenn man
+// danach fragt; name_en bleibt dabei immer gesetzt. Beides wird angezeigt:
+// der deutsche Text ist im Gelände schneller zu erfassen, der englische
+// ist der amtliche EUNIS-Wortlaut, an dem sich Literatur und Schlüssel
+// orientieren.
+const SPRACHE = 'de'
+
 // Die Reihenfolge, in der die Rollen angezeigt werden. Diagnostische Arten
 // stehen oben, weil sie den Typ kennzeichnen; konstante und dominante
 // beschreiben ihn.
@@ -38,6 +45,7 @@ async function habitatType({ base, fetch }, code, { signal } = {}) {
   if (!base || !kennung) return null
 
   const url = `${base}/v1/habitat-type/${encodeURIComponent(TYPOLOGIE)}/${encodeURIComponent(kennung)}`
+    + `?lang=${encodeURIComponent(SPRACHE)}`
   const res = await hole(fetch, url, signal)
   if (res.status === 404) return null
   if (!res.ok) throw await readError(res, 'situs')
@@ -72,7 +80,12 @@ function normalize(b) {
   return {
     code: b.code ?? null,
     name: b.name_en ?? null,
+    // Der deutsche Name und der volkstümliche daneben — letzteren führt
+    // situs nicht zu jedem Typ, er bleibt dann leer.
+    nameDe: b.name_de?.value ?? null,
+    nameVolkstuemlich: b.name_de?.vernacular ?? null,
     beschreibung: b.description?.value ?? null,
+    beschreibungDe: b.description_de?.value ?? null,
     // Woher die Beschreibung stammt, gehört sichtbar dazu: sie ist zitiert,
     // nicht selbst formuliert.
     quelle: b.description?.source ?? null,
@@ -95,8 +108,18 @@ function syntaxon(s) {
 
 function artenNachRolle(species) {
   return Object.fromEntries(
-    ROLLEN.map(([schluessel]) => [schluessel, (species?.[schluessel] ?? []).map(art)]),
+    ROLLEN.map(([schluessel]) => [schluessel, (species?.[schluessel] ?? []).filter(eigenstaendig).map(art)]),
   )
+}
+
+// situs leitet aus einem Sammeltaxon dessen Einzelarten ab und führt sie
+// mit provenance "derived_from_aggregate" in der Liste. Fachlich sagen sie
+// nichts über den Habitattyp aus, was das Aggregat nicht schon sagt, und
+// sie machen die Liste unübersichtlich: bei R22 sind 76 von 161 Einträgen
+// solche Ableitungen, bei R1A 38 von 116. Angezeigt werden deshalb nur
+// Arten, die situs unmittelbar führt.
+function eigenstaendig(a) {
+  return a.provenance !== 'derived_from_aggregate'
 }
 
 function art(a) {

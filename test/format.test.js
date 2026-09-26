@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { resultLabel, statusLabel, originLabel, formatCoord, formatCover } from '../src/format.js'
+import { resultLabel, statusLabel, originLabel, formatCoord, formatCover, formatCoverFull } from '../src/format.js'
 
 test('die Sonderzeichen des Ergebnisses werden ausgeschrieben', () => {
   // "?" und "+" allein sagen niemandem etwas.
@@ -32,9 +32,14 @@ test('Koordinaten werden auf sechs Nachkommastellen gezeigt', () => {
 })
 
 test('die Deckung zeigt Klasse und Prozent, wenn beides da ist', () => {
-  assert.equal(formatCover({ cover: 37.5, coverClass: '3' }), '3 (37,5 %)')
+  // Neben der Auswahl, die die Klasse schon zeigt, bleibt nur der
+  // Prozentwert — sonst stünde "[3 ▾] 3 (37,5 %)".
+  assert.equal(formatCover({ cover: 37.5, coverClass: '3' }), '37,5 %')
   assert.equal(formatCover({ cover: 24.65, coverClass: null }), '24,65 %')
   assert.equal(formatCover({ cover: null, coverClass: null }), 'ohne Deckung')
+  // Vollständig dort, wo keine Auswahl danebensteht.
+  assert.equal(formatCoverFull({ cover: 37.5, coverClass: '3' }), '3 (37,5 %)')
+  assert.equal(formatCoverFull({ cover: null, coverClass: null }), 'ohne Deckung')
 })
 
 test('vor dem ersten Abruf heißt ein fehlendes Kopfdatum "noch nicht abgefragt"', () => {

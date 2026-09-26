@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { SCALES, classesFor, toPercent, classFor, isValidPercent } from '../src/cover.js'
+import { SCALES, classesFor, toPercent, classFor, isValidPercent, naechsteStufe, PROZENTSTUFEN } from '../src/cover.js'
 
 test('klassische Skala hat sieben Klassen in aufsteigender Deckung', () => {
   assert.deepEqual(classesFor('bb-classic'), ['r', '+', '1', '2', '3', '4', '5'])
@@ -70,4 +70,33 @@ test('jede Klasse jeder Skala liefert eine gültige Deckung', () => {
 
 test('SCALES nennt die drei Eingabemodi', () => {
   assert.deepEqual(Object.keys(SCALES).sort(), ['bb-classic', 'bb-extended', 'percent'])
+})
+
+test('die Plus-Taste springt auf die nächste übliche Stufe', () => {
+  assert.equal(naechsteStufe(10, 1), 15)
+  assert.equal(naechsteStufe(15, 1), 20)
+  // Zwischenwerte landen auf der nächstgelegenen Stufe in Richtung, nicht
+  // auf einem Raster: wer 23 eingetragen hat, kommt auf 25.
+  assert.equal(naechsteStufe(23, 1), 25)
+  assert.equal(naechsteStufe(23, -1), 20)
+})
+
+test('an den Enden bleibt der Wert stehen', () => {
+  assert.equal(naechsteStufe(100, 1), 100)
+  assert.equal(naechsteStufe(0.1, -1), 0.1)
+})
+
+test('ohne Wert beginnt Plus unten und Minus oben', () => {
+  assert.equal(naechsteStufe(null, 1), 0.1)
+  assert.equal(naechsteStufe(null, -1), 100)
+})
+
+test('die Klassenmittelwerte sind Stufen', () => {
+  // Sonst landete ein Skalenwechsel auf einem Wert, den die Knöpfe nicht
+  // mehr treffen.
+  for (const scale of ['bb-classic', 'bb-extended']) {
+    for (const wert of Object.values(SCALES[scale].classes)) {
+      assert.ok(PROZENTSTUFEN.includes(wert), `${wert} fehlt in den Stufen`)
+    }
+  }
 })

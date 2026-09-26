@@ -15,6 +15,24 @@ export const HEADER_FIELDS = [
   'Country', 'Coast_EEA', 'Dunes_Bohn', 'Ecoreg', 'Altitude (m)', 'DEG_LAT', 'DEG_LON',
 ]
 
+// Die Feldnamen oben sind die von ESy verlangten Schlüssel; sie gehen so an
+// habitatus und dürfen sich nicht ändern. Als Beschriftung in der Maske
+// taugen sie nicht: "DEG_LON" oder "Dunes_Bohn" liest niemand im Gelände.
+// Angezeigt wird deshalb der Klartext, gesendet weiterhin der Schlüssel.
+const BESCHRIFTUNGEN = {
+  Country: 'Land',
+  Coast_EEA: 'Küste',
+  Dunes_Bohn: 'Dünen',
+  Ecoreg: 'Ökoregion',
+  'Altitude (m)': 'Höhe (m)',
+  DEG_LAT: 'Breite',
+  DEG_LON: 'Länge',
+}
+
+export function beschriftungFuer(field) {
+  return BESCHRIFTUNGEN[field] ?? field
+}
+
 const FIELDS = {
   Country: (doc) => esyCountryFor(doc.gazetteer?.admin?.country_iso),
   Coast_EEA: (doc) => oneOf(prop(doc, 'coast-eea-2022', 'coast_eea', 'coast_eea'), COAST_VALUES),

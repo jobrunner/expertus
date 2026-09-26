@@ -35,10 +35,23 @@ const SITUS_R1A = {
   code: 'R1A',
   level: 3,
   name_en: 'Semi-dry perennial calcareous grassland (meadow steppe)',
+  // situs liefert die deutschen Felder additiv, wenn lang=de gefragt wird;
+  // name_en bleibt dabei gesetzt.
+  name_de: {
+    value: 'Submediterran-subkontinentaler Halbtrockenrasen',
+    vernacular: 'Kalk-Halbtrockenrasen',
+    provenance: 'situs',
+    source: 'situs@0.11.1',
+  },
   description: {
-    value: 'Artenreiche Halbtrockenrasen basenreicher Böden.',
+    value: 'Species-rich semi-dry grassland on base-rich soils.',
     provenance: 'official',
     source: 'floraveg:eunis-habitat-factsheets:2021-06-01',
+  },
+  description_de: {
+    value: 'Artenreiche Halbtrockenrasen basenreicher Böden.',
+    provenance: 'situs',
+    source: 'situs@0.11.1',
   },
   species: {
     diagnostic: [{ concept_id: 'wcvp:1', verbatim_name: 'Bromus erectus', role: 'diagnostic', fidelity: 21 }],

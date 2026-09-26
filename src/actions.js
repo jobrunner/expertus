@@ -1,6 +1,6 @@
 // Orchestrierung. Die einzige Stelle, die mehrere Adapter kennt; Ansichten
 // rufen Aktionen, nie Adapter.
-import { HEADER_FIELDS, missingFields } from './header-map.js'
+import { HEADER_FIELDS, missingFields, beschriftungFuer } from './header-map.js'
 import { markDirty, CollisionError, StorageFullError } from './storage.js'
 import { classFor, isValidPercent, toPercent } from './cover.js'
 
@@ -118,9 +118,23 @@ function openPlot(deps, sampleId) {
 // gibt ohnehin schon Grad ein. Für die übrigen sechs Systeme (Aufgabe
 // 12) ist die Gradkoordinate NICHT bekannt, ohne ortus zu fragen — dafür
 // gibt es setCoordinateInput().
-function setCoordinate(deps, { lat, lon, source, accuracyM = null }) {
+function setCoordinate(deps, { lat, lon, source, accuracyM = null, altitudeM = null }) {
   return update(deps, (p) => {
     const { header, origin } = headerFuerNeueKoordinate(p)
+    // Die Höhe gehört zur Koordinate. Eine neue Koordinate verwirft sie
+    // deshalb immer — auch eine zuvor gemessene, die als 'manual' geführt
+    // wird und den ortus-Abruf sonst überdauerte. Sie gehörte zum alten
+    // Punkt, und die Auswertung liefe mit der Höhe eines anderen Ortes.
+    header['Altitude (m)'] = null
+    origin['Altitude (m)'] = 'missing'
+    // Nur eine tatsächlich gemessene Höhe tritt an ihre Stelle: sie kommt
+    // vom Gerät am Ort selbst und ist genauer als das Geländemodell an
+    // einer von Hand eingetippten Koordinate. Ohne Messung — jede
+    // Handeingabe, jedes Gerät ohne Höhenermittlung — bleibt es bei ortus.
+    if (altitudeM != null) {
+      header['Altitude (m)'] = Math.round(altitudeM)
+      origin['Altitude (m)'] = 'manual'
+    }
     return {
       ...p,
       coordinate: { lat, lon },
@@ -325,7 +339,9 @@ function blockingReason({ store }) {
   // zeigt — abgesetzt würden dann die Kopfdaten des alten Punktes.
   if (store.get().headerPending) return 'Kopfdaten werden noch geholt.'
   const fehlend = missingFields(current.headerOrigin ?? emptyOrigin())
-  if (fehlend.length) return `Kopfdaten fehlen: ${fehlend.join(', ')}`
+  // Im Klartext, nicht mit den ESy-Schlüsseln: die Meldung steht am
+  // gesperrten Auswerten-Knopf und sagt, was noch fehlt.
+  if (fehlend.length) return `Kopfdaten fehlen: ${fehlend.map(beschriftungFuer).join(', ')}`
   if (!current.species.length) return 'Mindestens eine Art wird gebraucht.'
   const ohneDeckung = current.species.filter((s) => !isValidPercent(s.cover))
   if (ohneDeckung.length) return `Ohne Deckung: ${ohneDeckung.map((s) => s.name).join(', ')}`

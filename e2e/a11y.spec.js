@@ -25,7 +25,7 @@ test('die Maske mit Kopfdaten ist barrierefrei', async ({ page }) => {
   await page.getByLabel('Breitengrad (Lat)').fill('52.52')
   await page.getByLabel('Längengrad (Lon)').fill('13.405')
   await page.getByLabel('Längengrad (Lon)').blur()
-  await expect(page.getByRole('row', { name: /Country/ })).toContainText('aus ortus')
+  await expect(page.getByRole('row', { name: /Land/ })).toContainText('aus ortus')
   await pruefe(page)
 })
 
@@ -74,9 +74,11 @@ test('der Fokus ist sichtbar und die Reihenfolge folgt der Lesereihenfolge', asy
     await page.keyboard.press('Tab')
     reihenfolge.push(await page.evaluate(() => document.activeElement?.id || document.activeElement?.textContent?.trim()))
   }
-  // Nach der Sample-ID kommt zuerst die Systemauswahl der Koordinaten-
-  // eingabe (Aufgabe 12), dann erst das Koordinatenfeld selbst.
-  expect(reihenfolge.slice(0, 4)).toEqual(['Zum Inhalt springen', 'Plots', 'sample', 'standort-system'])
+  // Der Klappgriff des Standort-Abschnitts ist selbst fokussierbar und
+  // kommt vor seinem Inhalt — so erreicht man den Abschnitt, bevor man
+  // durch ihn hindurchgeht. Danach die Sample-ID, dann die Systemauswahl
+  // der Koordinateneingabe (Aufgabe 12), dann das Koordinatenfeld.
+  expect(reihenfolge.slice(0, 5)).toEqual(['Zum Inhalt springen', 'Plots', 'Standort', 'sample', 'standort-system'])
 })
 
 test('die Angaben zum Habitattyp sind barrierefrei', async ({ page }) => {
