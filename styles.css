@@ -323,3 +323,31 @@ nav[aria-label='Hauptnavigation'] {
     width: 100%;
   }
 }
+
+/* --- Artensuche --- */
+
+/* Feld und Übernehmen-Knopf. Ohne eigene Regel stapelten sie sich ohne
+   Abstand: der Knopf klebte am Feld und stand links, wo er wie ein
+   abgerutschter Teil davon aussah.
+
+   Auf breiten Schirmen stehen beide nebeneinander, auf schmalen bricht
+   der Knopf um — dann rechtsbündig, wo der Daumen ist und wo ein
+   abschließender Knopf hingehört. */
+.art-eingabe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Das Feld nimmt den Platz, der bleibt, und behält eine Mindestbreite,
+   unter der ein Artname nicht mehr zu lesen wäre. */
+.art-eingabe > input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.art-uebernehmen {
+  flex: 0 0 auto;
+}
