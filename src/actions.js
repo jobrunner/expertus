@@ -121,12 +121,16 @@ function openPlot(deps, sampleId) {
 function setCoordinate(deps, { lat, lon, source, accuracyM = null, altitudeM = null }) {
   return update(deps, (p) => {
     const { header, origin } = headerFuerNeueKoordinate(p)
-    // Misst das Gerät eine Höhe, wird sie eingetragen und als vom Gerät
-    // stammend vermerkt. Als 'manual' geführt, weil der nachfolgende
-    // ortus-Abruf nur Felder überschreibt, deren Herkunft 'ortus' oder
-    // 'missing' ist — die Messung vor Ort soll das Geländemodell nicht
-    // stillschweigend verlieren. Wer das Modell bevorzugt, wählt das Feld
-    // von Hand neu.
+    // Die Höhe gehört zur Koordinate. Eine neue Koordinate verwirft sie
+    // deshalb immer — auch eine zuvor gemessene, die als 'manual' geführt
+    // wird und den ortus-Abruf sonst überdauerte. Sie gehörte zum alten
+    // Punkt, und die Auswertung liefe mit der Höhe eines anderen Ortes.
+    header['Altitude (m)'] = null
+    origin['Altitude (m)'] = 'missing'
+    // Nur eine tatsächlich gemessene Höhe tritt an ihre Stelle: sie kommt
+    // vom Gerät am Ort selbst und ist genauer als das Geländemodell an
+    // einer von Hand eingetippten Koordinate. Ohne Messung — jede
+    // Handeingabe, jedes Gerät ohne Höhenermittlung — bleibt es bei ortus.
     if (altitudeM != null) {
       header['Altitude (m)'] = Math.round(altitudeM)
       origin['Altitude (m)'] = 'manual'

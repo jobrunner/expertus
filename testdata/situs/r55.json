@@ -3,10 +3,21 @@
   "code": "R55",
   "level": 3,
   "name_en": "Lowland moist or wet tall-herb and fern fringe",
+  "name_de": {
+    "value": "Feuchter bis nasser Hochstauden- und Farnsaum der Tieflagen",
+    "vernacular": "Feuchte Hochstaudenflur",
+    "provenance": "situs",
+    "source": "situs@0.11.1"
+  },
   "description": {
     "value": "Tall-herb and fern-dominated communities of moist, sometimes flooded nutrient-rich soils in the lowlands and low mountain areas of Europe, up to the subalpine zone, through the temperate, boreal and submediterranean regions. The relatively species-rich vegetation may be found in river floodplains, along smaller watercourses, in the shade at the edge of forests, often as narrow strips, and, as secondary vegetation after the abandonment of pastures and especially meadows. The species composition is quite diverse, depending on the altitude, geographic distribution and location in the landscape.",
     "provenance": "official",
     "source": "floraveg:eunis-habitat-factsheets:2021-06-01"
+  },
+  "description_de": {
+    "value": "Von Hochstauden und Farnen beherrschte Gesellschaften feuchter, mitunter überfluteter nährstoffreicher Böden in den Tief- und Mittelgebirgslagen Europas bis in die subalpine Stufe, verbreitet im gemäßigten, borealen und submediterranen Bereich. Die verhältnismäßig artenreiche Vegetation findet sich in Flussauen, an kleineren Wasserläufen, im Schatten von Waldrändern, oft als schmale Streifen, sowie als Sekundärvegetation nach der Aufgabe von Weiden und besonders Wiesen. Die Artenzusammensetzung ist recht vielfältig und hängt von Höhenlage, geographischer Lage und Position in der Landschaft ab.",
+    "provenance": "situs",
+    "source": "situs@0.7.0"
   },
   "species": {
     "constant": [

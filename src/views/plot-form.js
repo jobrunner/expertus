@@ -7,7 +7,7 @@ import { ESY_COUNTRY_NAMES } from '../esy-countries.js'
 import { formatCoord, originLabel } from '../format.js'
 import { CollisionError } from '../storage.js'
 import { hashFor } from '../router.js'
-import { standort as standortSymbol } from '/assets/icons.js'
+import { standort as standortSymbol, chevronUnten as chevronSymbol } from '/assets/icons.js'
 import { mountKoordinaten } from '/assets/designsystem.js'
 
 // Dieselben sieben Systeme wie bei Ortus, wortgleich aus dessen frontend.go
@@ -250,6 +250,10 @@ function abschnitt({ id, titel, zusammenfassung, erledigt, inhalt, offen }) {
   if (!offen.has(id)) offen.set(id, !erledigt)
   const istOffen = offen.get(id)
   const griff = el('summary', {}, [
+    // Das Vorgabedreieck von <details> entfällt, sobald summary als
+    // Flex-Behälter gesetzt ist. Ohne eigenes Zeichen sieht man der
+    // Kopfzeile nicht an, dass sie sich aufklappen lässt.
+    svgIcon(chevronSymbol),
     // Die Überschrift bleibt eine Überschrift, auch im summary: sonst
     // verschwindet der Abschnitt aus der Überschriftenliste, über die sich
     // Bildschirmleser durch eine Seite bewegen. <summary> erlaubt
@@ -290,7 +294,11 @@ function standort(plot, actions, router, offen) {
       gps,
       // Im Gelände entscheidet der Unterschied zwischen 8 m und 800 m —
       // der Browser verschweigt ihn sonst, deshalb wird er hier angezeigt.
-      plot.accuracyM != null ? el('p', { class: 'muted', text: `± ${plot.accuracyM} m` }) : null,
+      // Ausgeschrieben, weil "± 12 m" allein offenlässt, worauf sich die
+      // Angabe bezieht: auf die waagerechte Lage, nicht auf die Höhe.
+      plot.accuracyM != null
+        ? el('p', { class: 'muted', text: `Standortgenauigkeit ± ${plot.accuracyM} m (waagerecht)` })
+        : null,
     ],
   })
 }

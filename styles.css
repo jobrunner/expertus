@@ -158,12 +158,31 @@ nav[aria-label='Hauptnavigation'] {
    trotzdem in der Klappzeile liegen, nicht darüber. */
 .abschnitt > summary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   cursor: pointer;
   /* Der Griff muss auch mit Handschuhen zu treffen sein (WCAG 2.5.8). */
   min-height: 2.75rem;
+  /* list-style und ::-webkit-details-marker: beides entfernt das
+     browsereigene Dreieck, das sonst neben dem Chevron stünde. */
+  list-style: none;
+}
+
+.abschnitt > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Das Chevron zeigt nach unten, solange zu ist, und dreht sich beim
+   Öffnen. Die Drehung folgt prefers-reduced-motion über die allgemeine
+   Regel des Design-Systems. */
+.abschnitt > summary > .icon {
+  flex: 0 0 auto;
+  transition: transform 0.15s;
+}
+
+.abschnitt[open] > summary > .icon {
+  transform: rotate(180deg);
 }
 
 .abschnitt-titel {

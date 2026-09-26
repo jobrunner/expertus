@@ -166,3 +166,20 @@ test('ohne Höhe vom Gerät bleibt es beim Geländemodell', async () => {
   assert.equal(store.get().plot.header['Altitude (m)'], 36)
   assert.equal(store.get().plot.headerOrigin['Altitude (m)'], 'ortus')
 })
+
+test('eine von Hand eingegebene Koordinate verwirft die gemessene Höhe', async () => {
+  const { actions, store } = setup()
+  actions.newPlot()
+  // Erst per GPS: die Gerätehöhe steht drin und gilt als von Hand gesetzt.
+  actions.setCoordinate({ lat: 54.9, lon: 8.31, source: 'gps', accuracyM: 5, altitudeM: 12.4 })
+  assert.equal(store.get().plot.header['Altitude (m)'], 12)
+
+  // Dann eine andere Koordinate von Hand. Die 12 m gehören zum alten
+  // Punkt; ohne Rücksetzen blieben sie stehen, weil 'manual' vom
+  // ortus-Abruf nicht überschrieben wird — und die Auswertung liefe mit
+  // der Höhe eines anderen Ortes.
+  actions.setCoordinate({ lat: 52.52, lon: 13.405, source: 'manual' })
+  await actions.fetchHeader()
+  assert.equal(store.get().plot.header['Altitude (m)'], 36)
+  assert.equal(store.get().plot.headerOrigin['Altitude (m)'], 'ortus')
+})

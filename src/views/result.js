@@ -97,8 +97,24 @@ function warten(h, code, actions) {
 
 function angaben(d) {
   return el('div', { class: 'habitat' }, [
-    d.name ? el('h4', { text: d.name }) : null,
-    d.beschreibung ? el('p', { text: d.beschreibung }) : null,
+    // Der deutsche Name steht oben: im Gelände ist er schneller zu
+    // erfassen. Der englische bleibt darunter, weil er der amtliche
+    // EUNIS-Wortlaut ist, an dem sich Literatur und Schlüssel orientieren.
+    el('h4', {}, [
+      el('span', { text: d.nameDe ?? d.name ?? '' }),
+      // Der volkstümliche Name, den situs nicht zu jedem Typ führt.
+      d.nameVolkstuemlich ? el('span', { class: 'muted habitat-volkstuemlich', text: ` (${d.nameVolkstuemlich})` }) : null,
+    ]),
+    d.nameDe && d.name ? el('p', { class: 'muted habitat-name-en', text: d.name }) : null,
+    d.beschreibungDe ? el('p', { text: d.beschreibungDe }) : null,
+    // Der englische Wortlaut klappt auf, statt die Karte zu verdoppeln:
+    // zwei lange Absätze übereinander liest im Gelände niemand.
+    d.beschreibung && d.beschreibungDe
+      ? el('details', { class: 'akkordeon' }, [
+        el('summary', { text: 'Beschreibung im englischen Original' }),
+        el('div', { class: 'akkordeon-inhalt' }, el('p', { text: d.beschreibung })),
+      ])
+      : (d.beschreibung ? el('p', { text: d.beschreibung }) : null),
     // Die Beschreibung ist zitiert, nicht selbst formuliert.
     d.quelle ? el('p', { class: 'muted', text: `Quelle: ${d.quelle}` }) : null,
     // Die Arten stehen vor den Syntaxa: sie sind das, womit man im Gelände

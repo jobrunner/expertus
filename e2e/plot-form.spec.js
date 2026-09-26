@@ -125,7 +125,9 @@ test('der GPS-Knopf füllt beide Felder auf sechs Nachkommastellen und nennt die
   await page.getByRole('button', { name: 'Aktuellen Standort verwenden' }).click()
   await expect(page.getByLabel('Breitengrad (Lat)')).toHaveValue('54.901235')
   await expect(page.getByLabel('Längengrad (Lon)')).toHaveValue('8.312346')
-  await expect(page.getByText('± 12 m')).toBeVisible()
+  // Ausgeschrieben: "± 12 m" allein lässt offen, worauf sich die Angabe
+  // bezieht — auf die waagerechte Lage, nicht auf die Höhe.
+  await expect(page.getByText('Standortgenauigkeit ± 12 m (waagerecht)')).toBeVisible()
 })
 
 test('ein eingefügtes Koordinatenpaar verteilt sich auf beide Felder', async ({ page }) => {
@@ -268,4 +270,15 @@ test('ein gespeicherter Plot öffnet mit zugeklapptem Standort', async ({ page }
   await expect(standort).not.toHaveAttribute('open', '')
   // Zugeklappt muss die Kopfzeile sagen, was drinsteht.
   await expect(standort).toContainText('52.520000 / 13.405000')
+})
+
+test('den zuklappbaren Abschnitten sieht man an, dass sie sich öffnen lassen', async ({ page }) => {
+  await neuerPlot(page)
+  // Das Vorgabedreieck von <details> verschwindet, sobald summary als
+  // Flex-Behälter gesetzt ist. Ohne eigenes Zeichen wirkt die Kopfzeile
+  // wie eine gewöhnliche Überschrift.
+  for (const titel of ['Standort', 'Kopfdaten']) {
+    const griff = page.locator('details.abschnitt', { has: page.getByText(titel, { exact: true }) }).locator('summary')
+    await expect(griff.locator('svg.icon')).toBeVisible()
+  }
 })

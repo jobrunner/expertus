@@ -16,8 +16,31 @@ test('der Habitattyp wird unter der EUNIS-2021-Typologie abgefragt', async () =>
   const s = createSitus({ baseUrl: BASE, fetch: createFakeFetch({ json: R55 }, calls) })
   await s.habitatType('R55')
   // Die Typologie gehört kodiert in den Pfad: das @ ist in einem
-  // Pfadsegment sonst mehrdeutig.
-  assert.equal(calls[0].url, `${BASE}/v1/habitat-type/eunis%402021/R55`)
+  // Pfadsegment sonst mehrdeutig. lang=de holt Name und Beschreibung
+  // zusätzlich auf Deutsch; name_en bleibt dabei gesetzt.
+  assert.equal(calls[0].url, `${BASE}/v1/habitat-type/eunis%402021/R55?lang=de`)
+})
+
+test('der deutsche Name und die deutsche Beschreibung kommen mit', async () => {
+  const s = createSitus({ baseUrl: BASE, fetch: createFakeFetch({ json: R55 }) })
+  const h = await s.habitatType('R55')
+  assert.equal(h.nameDe, 'Feuchter bis nasser Hochstauden- und Farnsaum der Tieflagen')
+  // Den volkstümlichen Namen führt situs nicht zu jedem Typ.
+  assert.equal(h.nameVolkstuemlich, 'Feuchte Hochstaudenflur')
+  assert.match(h.beschreibungDe, /^Von Hochstauden und Farnen beherrschte/)
+})
+
+test('fehlt eine Übersetzung, bleibt das Feld leer statt undefined', async () => {
+  const ohne = { ...R55 }
+  delete ohne.name_de
+  delete ohne.description_de
+  const s = createSitus({ baseUrl: BASE, fetch: createFakeFetch({ json: ohne }) })
+  const h = await s.habitatType('R55')
+  assert.equal(h.nameDe, null)
+  assert.equal(h.nameVolkstuemlich, null)
+  assert.equal(h.beschreibungDe, null)
+  // Der englische Wortlaut bleibt und trägt die Anzeige.
+  assert.ok(h.name)
 })
 
 test('Name, Beschreibung und Quelle kommen heraus', async () => {
