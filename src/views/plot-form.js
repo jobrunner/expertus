@@ -399,7 +399,26 @@ function kopfdatenStand(plot, pending, fehlend) {
 // Komplexität trägt statt in der von renderPlotForm aufzugehen — cleanup
 // und abschnitte bleiben dagegen dort verschachtelt, weil sie das
 // veränderliche sectionCleanups direkt anfassen.
-function draw({ mount, store, actions, router, cleanupSections, abschnitte, offen }) {
+function draw(deps) {
+  // Solange ein Auswahlfeld bedient wird, wird nicht neu aufgebaut.
+  //
+  // Auf iOS feuert change an einem <select> bei jeder Bewegung im Picker,
+  // nicht erst beim Schließen. Wird das Element mitten darin ersetzt,
+  // verliert der Picker seinen Bezug: die Auswahl scheint zu greifen, das
+  // Menü öffnet sich erneut, und man muss ein zweites Mal wählen.
+  //
+  // Der Aufbau wird deshalb bis zum blur aufgeschoben. Gespeichert ist der
+  // Wert längst — change hat den Store bereits geändert; aufgeschoben wird
+  // allein die Darstellung.
+  const aktiv = document.activeElement
+  if (aktiv?.tagName === 'SELECT' && deps.mount.contains(aktiv)) {
+    aktiv.addEventListener('blur', () => draw(deps), { once: true })
+    return
+  }
+  zeichne(deps)
+}
+
+function zeichne({ mount, store, actions, router, cleanupSections, abschnitte, offen }) {
   // Ein Neuaufbau ersetzt den gesamten Einhängepunkt und würde sonst den
   // Fokus verwerfen: nach jedem Zeichen in einem Zahlenfeld läge er im
   // Nichts, und die Maske wäre über Tastatur unbenutzbar. preserveFocus

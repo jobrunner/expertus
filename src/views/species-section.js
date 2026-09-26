@@ -2,6 +2,7 @@
 // des Design-Systems, siehe /assets/designsystem.js) und die erfasste
 // Liste mit Deckung je Skala.
 import { el, stapelbar, svgIcon } from '../dom.js'
+import { wissenschaftlich } from '../namen.js'
 import { classesFor, naechsteStufe, SCALES, toPercent } from '../cover.js'
 import { formatPercent } from '../format.js'
 import { mountCombobox } from '/assets/designsystem.js'
@@ -123,7 +124,7 @@ function tabelle(plot, actions) {
   return stapelbar(el('table', { class: 'arten-liste' }, [
     el('thead', {}, el('tr', {}, ['Art', 'Deckung', ''].map((t) => el('th', { scope: 'col', text: t })))),
     el('tbody', {}, plot.species.map((s, i) => el('tr', {}, [
-      el('td', {}, [el('span', { text: s.name }), herkunft(s)]),
+      el('td', {}, [el('span', {}, wissenschaftlich(s.name)), herkunft(s)]),
       el('td', {}, deckung(plot, s, i, actions)),
       el('td', {}, entfernenKnopf(s, i, actions)),
     ]))),

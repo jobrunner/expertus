@@ -228,3 +228,26 @@ test.describe('iPhone SE', () => {
     expect(hoehe).toBeLessThan(110)
   })
 })
+
+test('ein Auswahlfeld wird während der Bedienung nicht ersetzt', async ({ page }) => {
+  // Auf iOS feuert change an einem <select> bei jeder Bewegung im Picker.
+  // Wird das Element dabei ersetzt, verliert der Picker seinen Bezug: die
+  // Auswahl scheint zu greifen, das Menü öffnet sich erneut, und man muss
+  // ein zweites Mal wählen.
+  await page.goto('/#/plots')
+  await page.getByRole('button', { name: 'Neuen Plot anlegen' }).click()
+  const feld = page.getByLabel('Art suchen')
+  await feld.fill('Festuca ovina')
+  await feld.press('Enter')
+
+  await page.evaluate(() => { window.__vorher = document.getElementById('deckung-0') })
+  const auswahl = page.getByRole('combobox', { name: 'Deckung von Festuca ovina' })
+  await auswahl.focus()
+  await auswahl.selectOption('3')
+  expect(await page.evaluate(() => document.getElementById('deckung-0') === window.__vorher)).toBe(true)
+
+  // Nach dem Verlassen wird der Aufbau nachgeholt — der Wert steht.
+  await feld.focus()
+  await expect(page.getByRole('combobox', { name: 'Deckung von Festuca ovina' })).toHaveValue('3')
+  expect(await page.evaluate(() => document.getElementById('deckung-0') !== window.__vorher)).toBe(true)
+})

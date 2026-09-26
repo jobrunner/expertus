@@ -5,6 +5,7 @@
 import { el, stapelbar } from '../dom.js'
 import { resultLabel, statusLabel } from '../format.js'
 import { ROLLEN } from '../adapters/situs.js'
+import { wissenschaftlich } from '../namen.js'
 
 export function renderResultSection({ plot, actions, store }) {
   const grund = actions.blockingReason()
@@ -136,11 +137,12 @@ function syntaxaListe(syntaxa) {
     el('summary', { text: `Pflanzengesellschaften des Habitattyps (${syntaxa.length})` }),
     el('div', { class: 'akkordeon-inhalt' },
       el('ul', {}, syntaxa.map((s) => el('li', {}, [
-        el('span', { text: s.name }),
-        // Der Autor gehört zum Namen einer Pflanzengesellschaft, steht aber
-        // gedämpft: er hilft beim Nachschlagen, nicht beim Erkennen.
+        el('span', {}, wissenschaftlich(s.name)),
+        // Der Autor gehört zum Namen einer Pflanzengesellschaft, steht
+        // aber aufrecht und gedämpft: er ist kein Namensbestandteil im
+        // Sinne der Nomenklatur und hilft beim Nachschlagen, nicht beim
+        // Erkennen.
         s.autor ? el('span', { class: 'muted', text: ` ${s.autor}` }) : null,
-        s.rang ? el('span', { class: 'muted', text: ` · ${s.rang}` }) : null,
       ]))),
     ),
   ])
@@ -158,7 +160,7 @@ function artenListe(arten) {
     el('div', { class: 'akkordeon-inhalt' }, gruppen.flatMap(([bezeichnung, liste]) => [
       el('h5', { text: `${bezeichnung} (${liste.length})` }),
       el('ul', {}, liste.map((a) => el('li', {}, [
-        el('span', { text: a.name }),
+        el('span', {}, wissenschaftlich(a.name)),
         kennzahl(a),
       ]))),
     ])),

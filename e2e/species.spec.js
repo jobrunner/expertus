@@ -240,3 +240,13 @@ test('der Übernehmen-Knopf nimmt den hervorgehobenen Vorschlag', async ({ page 
   // gegen den Freitext.
   await expect(page.locator('td[data-label="Art"]')).toContainText('Festuca ovina')
 })
+
+test('der Artname in der Erfassungsliste steht kursiv', async ({ page }) => {
+  const input = page.getByLabel('Art suchen')
+  await input.fill('Festuca ovina aggr.')
+  await input.press('Enter')
+  const zelle = page.locator('td[data-label="Art"]')
+  // "aggr." benennt ein Sammeltaxon und bleibt aufrecht.
+  await expect(zelle.locator('i')).toHaveText(['Festuca', 'ovina'])
+  await expect(zelle).toContainText('aggr.')
+})
