@@ -12,6 +12,9 @@ name: Commit Lint
 
 on:
   pull_request:
+    # edited dazu: Sonst prüft nach einer Titelkorrektur niemand neu, und ein
+    # Re-run hilft nicht — er bekommt das alte Ereignis mit dem alten Titel.
+    types: [opened, synchronize, reopened, edited]
     branches:
       - main
       - master
