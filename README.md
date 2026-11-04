@@ -88,6 +88,17 @@ docker run -p 8080:8080 \
   ghcr.io/jobrunner/expertus:0.1.0
 ```
 
+Das Image bringt einen `HEALTHCHECK` mit. Weil es distroless ist — ohne
+Shell, `wget` und `curl` —, prüft sich das Binärprogramm selbst:
+`/expertus -healthcheck` fragt `GET /` auf `127.0.0.1:$PORT` und endet mit
+0 bei Status 200, sonst mit 1. In einer Compose-Datei lautet die Probe
+entsprechend:
+
+```yaml
+healthcheck:
+  test: ["CMD", "/expertus", "-healthcheck"]
+```
+
 Signatur und Bezeugungen prüfen:
 
 ```sh
