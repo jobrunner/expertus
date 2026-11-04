@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/jobrunner/expertus/compare/v0.5.1...v0.5.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **docker:** add -healthcheck flag for the distroless image ([4b635ad](https://github.com/jobrunner/expertus/commit/4b635ad6bbe72577444767079cbde7d71d58748e))
+
 ## [0.5.1](https://github.com/jobrunner/expertus/compare/v0.5.0...v0.5.1) (2026-09-26)
 
 
