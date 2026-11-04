@@ -3,6 +3,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,9 +14,21 @@ import (
 )
 
 func main() {
+	health := flag.Bool("healthcheck", false,
+		"GET / auf 127.0.0.1:$PORT prüfen und mit 0 oder 1 enden, statt zu "+
+			"starten; für den HEALTHCHECK im distroless-Abbild ohne wget/curl")
+	flag.Parse()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+	}
+	if *health {
+		if err := healthcheck("127.0.0.1:" + port); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
 	}
 	cfg := server.Config{
 		OrtusBaseURL:     os.Getenv("ORTUS_BASE_URL"),

@@ -25,4 +25,10 @@ ENV ORTUS_BASE_URL=https://ortus.fieldworksdiary.org \
 
 USER nonroot
 EXPOSE 8080
+
+# Distroless hat weder wget noch curl; die Probe stellt das Binärprogramm
+# selbst. Sie fragt 127.0.0.1:$PORT, also denselben Port wie der Server.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD ["/expertus", "-healthcheck"]
+
 ENTRYPOINT ["/expertus"]
